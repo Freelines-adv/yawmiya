@@ -275,6 +275,85 @@ tr:hover td { background:rgba(44,181,160,0.04); }
   .summary-grid { grid-template-columns:1fr 1fr; }
   .db-summary { grid-template-columns:1fr; }
 }
+
+/* ── Manager Sub-Tabs ──────────────────────────────────────────── */
+.mgr-tabs { scrollbar-width:none; }
+.mgr-tabs::-webkit-scrollbar { display:none; }
+.mgr-tab {
+  padding:10px 20px; background:none; border:none;
+  color:var(--text-muted); font-family:'Changa',sans-serif;
+  font-size:0.88rem; font-weight:600; cursor:pointer;
+  border-bottom:3px solid transparent; white-space:nowrap;
+  transition:all 0.2s; flex-shrink:0;
+}
+.mgr-tab:hover { color:var(--text); }
+.mgr-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+/* ── Accounting Cards ──────────────────────────────────────────── */
+.acct-card {
+  background:var(--dark3); border:1px solid var(--gold-border);
+  border-radius:var(--radius); padding:16px 20px;
+}
+.acct-card h5 {
+  font-size:0.78rem; color:var(--text-muted); font-weight:600;
+  margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px;
+}
+.acct-card .acct-val {
+  font-size:1.5rem; font-weight:800; font-family:'Barlow',sans-serif;
+}
+.acct-card .acct-sub {
+  font-size:0.75rem; color:var(--text-muted); margin-top:4px;
+}
+.acct-card.green { border-color:var(--teal-border); }
+.acct-card.green .acct-val { color:var(--teal); }
+.acct-card.gold { border-color:var(--gold-border); }
+.acct-card.gold .acct-val { color:var(--gold); }
+.acct-card.red { border-color:#dc262655; }
+.acct-card.red .acct-val { color:#dc2626; }
+.acct-card.purple { border-color:var(--purple-border); }
+.acct-card.purple .acct-val { color:var(--purple-light); }
+
+/* ── Custody employee row ──────────────────────────────────────── */
+.emp-settle-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-radius:10px;
+  background:var(--dark3); margin-bottom:8px;
+  border:1px solid var(--dark4); flex-wrap:wrap; gap:8px;
+}
+.emp-settle-row .emp-name { font-weight:700; color:var(--text); font-size:0.9rem; }
+.emp-settle-row .emp-nums { display:flex; gap:16px; flex-wrap:wrap; font-size:0.82rem; }
+.emp-settle-row .em-lbl { color:var(--text-muted); }
+.emp-settle-row .em-val { font-weight:700; }
+.badge-surplus { background:var(--teal-dim); color:var(--teal); padding:3px 10px; border-radius:20px; font-size:0.78rem; font-weight:700; }
+.badge-deficit { background:#dc262622; color:#dc2626; padding:3px 10px; border-radius:20px; font-size:0.78rem; font-weight:700; }
+.badge-balanced { background:var(--gold-dim); color:var(--gold); padding:3px 10px; border-radius:20px; font-size:0.78rem; font-weight:700; }
+
+/* ── Income statement row colors ──────────────────────────────── */
+#income-table-body tr td:last-child { font-weight:700; }
+#income-table-body tr.profit-row { background:rgba(44,181,160,0.06); }
+#income-table-body tr.loss-row { background:rgba(220,38,38,0.06); }
+#income-table-body tr.pending-row { background:rgba(201,168,76,0.06); }
+
+/* ── Settlement badge ──────────────────────────────────────────── */
+.settle-badge-surplus { color:var(--teal); font-weight:800; }
+.settle-badge-deficit { color:#dc2626; font-weight:800; }
+
+
+/* ── VAT checkbox toggle ────────────────────────────────────────── */
+.vat-toggle-label {
+  display:flex; align-items:center; gap:8px; cursor:pointer;
+  font-size:0.82rem; font-weight:600; color:var(--text-muted);
+  user-select:none;
+}
+.vat-toggle-label input[type="checkbox"] {
+  width:16px; height:16px; accent-color:var(--gold);
+  cursor:pointer; flex-shrink:0;
+}
+.vat-toggle-label:has(input:checked) .vat-toggle-text { color:var(--gold); }
+.vat-display { font-size:0.9rem; font-weight:700; padding:2px 0; }
+.vat-display.vat-active { color:var(--gold); }
+.vat-display.vat-zero { color:var(--text-dim); }
+
 </style>
 </head>
 <body>
@@ -358,26 +437,120 @@ tr:hover td { background:rgba(44,181,160,0.04); }
 
   <!-- Manager Section -->
   <div id="manager-section" class="content-section">
-    <h2 style="margin-bottom:22px;border-right:4px solid var(--gold);padding-right:14px;">إدارة المبيعات والأرباح</h2>
+
+  <!-- ══ NAV TABS inside manager ══ -->
+  <div class="mgr-tabs no-print" style="display:flex;gap:0;border-bottom:2px solid var(--gold-border);margin-bottom:22px;overflow-x:auto;">
+    <button class="mgr-tab active" onclick="showMgrTab('tab-projects')">📦 المشاريع</button>
+    <button class="mgr-tab" onclick="showMgrTab('tab-vat')">🧾 ضريبة القيمة المضافة</button>
+    <button class="mgr-tab" onclick="showMgrTab('tab-custody')">💼 العهد والتسويات</button>
+    <button class="mgr-tab" onclick="showMgrTab('tab-income')">📊 قائمة الدخل</button>
+  </div>
+
+  <!-- ══ TAB: Projects / Sales ══ -->
+  <div id="tab-projects" class="mgr-panel active">
     <div class="card">
-      <div class="card-title">📥 إضافة مبيعات مشروع</div>
-      <div style="display:grid;grid-template-columns:1fr 2fr 1fr 120px;gap:12px;">
-        <input type="text" id="m-pnum" placeholder="رقم المشروع">
-        <input type="text" id="m-pname" placeholder="اسم المشروع">
-        <input type="text" id="m-sales" placeholder="المبيعات (ريال)">
-        <button class="btn" onclick="addManagerSales()">حفظ</button>
+      <div class="card-title">📥 إضافة مبيعات / مبلغ محوّل من العميل</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end;">
+        <div><label class="badge-gold">رقم المشروع</label><input type="text" id="m-pnum" placeholder="رقم المشروع"></div>
+        <div><label class="badge-gold">اسم المشروع</label><input type="text" id="m-pname" placeholder="اسم المشروع"></div>
+        <div><label class="badge-gold">المبيعات (إجمالي العقد)</label><input type="number" id="m-sales" placeholder="0.00" step="0.01"></div>
+        <div><label class="badge-gold">المبلغ المحوّل من العميل</label><input type="number" id="m-received" placeholder="0.00" step="0.01"></div>
+        <div><label class="badge-gold">تاريخ التحويل</label><input type="date" id="m-date"></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn btn-gold" style="width:100%;" onclick="addManagerSales()">✓ حفظ</button></div>
       </div>
     </div>
     <div class="db-summary" id="db-summary"></div>
     <div class="card">
-      <div class="card-title">📊 كشف قائمة الدخل</div>
-      <table>
-        <thead><tr><th>رقم المشروع</th><th>اسم المشروع</th><th>المبيعات</th><th>المصروفات</th><th>الصافي</th></tr></thead>
-        <tbody id="income-table-body"></tbody>
-      </table>
+      <div class="card-title">📋 سجل المشاريع والمبالغ المحوّلة</div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>رقم المشروع</th><th>اسم المشروع</th><th>قيمة العقد</th><th>محوّل من العميل</th><th>مصروفات العهد</th><th>الصافي</th><th>تاريخ</th><th></th></tr></thead>
+          <tbody id="projects-table-body"></tbody>
+        </table>
+      </div>
     </div>
     <button class="btn btn-gold btn-full" onclick="printManagerReport()">🖨️ طباعة التقرير المالي العام</button>
   </div>
+
+  <!-- ══ TAB: VAT ══ -->
+  <div id="tab-vat" class="mgr-panel" style="display:none;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;" id="vat-summary-cards"></div>
+    <div class="card">
+      <div class="card-title">🧾 تسجيل سداد ضريبة</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end;">
+        <div><label class="badge-gold">نوع السداد</label>
+          <select id="vat-pay-type">
+            <option value="bank">سداد للبنك (هيئة الزكاة)</option>
+            <option value="refund">استرداد ضريبي</option>
+          </select>
+        </div>
+        <div><label class="badge-gold">المبلغ المسدد (ر.س)</label><input type="number" id="vat-pay-amt" placeholder="0.00" step="0.01"></div>
+        <div><label class="badge-gold">رقم المرجع / الإيصال</label><input type="text" id="vat-pay-ref" placeholder="رقم إيصال السداد"></div>
+        <div><label class="badge-gold">التاريخ</label><input type="date" id="vat-pay-date"></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn btn-gold" style="width:100%;" onclick="addVatPayment()">✓ تسجيل</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📑 سجل مدفوعات الضريبة</div>
+      <div style="overflow-x:auto;"><table>
+        <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>المرجع</th><th></th></tr></thead>
+        <tbody id="vat-payments-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: Custody / Settlements ══ -->
+  <div id="tab-custody" class="mgr-panel" style="display:none;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;" id="custody-summary-cards"></div>
+    <div class="card">
+      <div class="card-title">💼 تسوية عهدة موظف</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end;">
+        <div><label class="badge-gold">اسم الموظف</label>
+          <select id="settle-emp"><option value="">— اختر موظف —</option></select>
+        </div>
+        <div><label class="badge-gold">رقم المشروع</label>
+          <select id="settle-proj"><option value="">— اختر مشروع —</option></select>
+        </div>
+        <div><label class="badge-gold">مبلغ العهدة الممنوح</label><input type="number" id="settle-granted" placeholder="0.00" step="0.01"></div>
+        <div><label class="badge-gold">المصروف الفعلي</label><input type="number" id="settle-spent" placeholder="0.00" step="0.01" id="settle-spent" readonly style="background:var(--dark3);"></div>
+        <div><label class="badge-gold">تاريخ التسوية</label><input type="date" id="settle-date"></div>
+        <div><label class="badge-gold">ملاحظات</label><input type="text" id="settle-notes" placeholder="ملاحظات اختيارية"></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn btn-gold" style="width:100%;" onclick="addSettlement()">✓ تسوية</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 سجل التسويات — مرحّل لقائمة الدخل</div>
+      <div style="overflow-x:auto;"><table>
+        <thead><tr><th>الموظف</th><th>المشروع</th><th>العهدة الممنوحة</th><th>المصروف الفعلي</th><th>الفائض / العجز</th><th>التاريخ</th><th>ملاحظات</th><th></th></tr></thead>
+        <tbody id="settlements-body"></tbody>
+      </table></div>
+    </div>
+    <div class="card" style="border-right:4px solid var(--teal);">
+      <div class="card-title" style="color:var(--teal);">👤 ملخص عهد الموظفين</div>
+      <div id="emp-custody-summary"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: Income Statement ══ -->
+  <div id="tab-income" class="mgr-panel" style="display:none;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;" id="income-summary-cards"></div>
+    <div class="card">
+      <div class="card-title">📊 قائمة الدخل الشاملة — لكل ريال مصدره ومصرفه</div>
+      <div style="overflow-x:auto;"><table>
+        <thead>
+          <tr style="background:var(--dark3);">
+            <th>المشروع</th><th>قيمة العقد</th><th>محوّل من العميل</th>
+            <th>مصروفات العهد</th><th>VAT مدفوع</th><th>تسويات</th>
+            <th>صافي الربح</th><th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody id="income-table-body"></tbody>
+      </table></div>
+    </div>
+    <button class="btn btn-gold btn-full" onclick="printFullIncomeStatement()">🖨️ طباعة قائمة الدخل الكاملة</button>
+  </div>
+
+</div>
 
   <div id="journals-container"></div>
 </div>
@@ -453,6 +626,7 @@ function showSection(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(id==='manager'){
     document.getElementById('manager-section').classList.add('active');
+    updateDashboard();
     document.querySelector('.manager-tab').classList.add('active');
   } else {
     let panel=document.getElementById('panel-'+id);
@@ -495,12 +669,16 @@ function setExp(pIdx,rIdx,field,val){
   if(field==='amt'){
     const amt=n(val);
     projects[pIdx].expenses[rIdx].amt=amt;
-    // VAT = 0 for manual entry; only scanner fills real VAT
-    // (keep existing vat if it was set by scanner)
-    if(!projects[pIdx].expenses[rIdx].fromScanner){
+    // if hasVat checked, recalc VAT automatically from amount
+    if(projects[pIdx].expenses[rIdx].hasVat){
+      const vat = +(amt * 15 / 115).toFixed(2);
+      projects[pIdx].expenses[rIdx].vat = vat;
+      const vatEl=document.getElementById('vat-'+pIdx+'-'+rIdx);
+      if(vatEl){ vatEl.textContent=fmt(vat)+' ر.س'; vatEl.className='vat-display vat-active'; }
+    } else {
       projects[pIdx].expenses[rIdx].vat=0;
       const vatEl=document.getElementById('vat-'+pIdx+'-'+rIdx);
-      if(vatEl){ vatEl.textContent='0.00 ر.س (يدوي)'; vatEl.style.color='var(--text-muted)'; }
+      if(vatEl){ vatEl.textContent='—'; vatEl.className='vat-display vat-zero'; }
     }
     save();
   } else {
@@ -568,6 +746,8 @@ function buildIncRow(pIdx,rIdx,i){
 function buildExpRow(pIdx,rIdx,e){
   const div=document.createElement('div');
   div.className='exp-row';
+  const hasVat = e.hasVat || e.fromScanner || false;
+  const vatAmt = hasVat ? n(e.amt)*15/115 : 0;
   div.innerHTML=`
     <div class="exp-row-grid">
       <div><label class="badge-gold">البيان</label>
@@ -580,19 +760,54 @@ function buildExpRow(pIdx,rIdx,e){
       </div>
       <div><label class="badge-gold">المبلغ الإجمالي (ر.س)</label>
         <input type="number" value="${e.amt||''}" placeholder="0.00" step="0.01" min="0"
+          id="amt-${pIdx}-${rIdx}"
           onblur="setExp(${pIdx},${rIdx},'amt',this.value)">
       </div>
-      <div><label class="badge-gold">VAT ${e.fromScanner?'(من الفاتورة 🔍)':'(يدوي = صفر)'}</label>
-        <div class="vat-display" id="vat-${pIdx}-${rIdx}" style="color:${e.fromScanner?'var(--gold)':'var(--text-muted)'}">
-          ${fmt(e.vat)} ر.س${e.fromScanner?'':' —'}
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label class="badge-gold">ضريبة القيمة المضافة</label>
+        <label class="vat-toggle-label" id="vat-toggle-wrap-${pIdx}-${rIdx}">
+          <input type="checkbox" id="vat-chk-${pIdx}-${rIdx}"
+            ${hasVat?'checked':''}
+            onchange="toggleVat(${pIdx},${rIdx},this.checked)">
+          <span class="vat-toggle-text">${hasVat?'يوجد ضريبة 15%':'لا توجد ضريبة'}</span>
+        </label>
+        <div class="vat-display ${hasVat?'vat-active':'vat-zero'}" id="vat-${pIdx}-${rIdx}">
+          ${hasVat ? fmt(vatAmt)+' ر.س' : '—'}
         </div>
       </div>
     </div>
     <div class="exp-row-footer">
-      <button class="btn btn-purple" onclick="startScanner(${pIdx},${rIdx})">📸 مسح باركود</button>
       <button class="btn btn-danger" onclick="deleteExpRow(${pIdx},${rIdx})">🗑️ حذف</button>
     </div>`;
   return div;
+}
+
+function toggleVat(pIdx, rIdx, checked){
+  projects[pIdx].expenses[rIdx].hasVat = checked;
+  if(!checked){
+    projects[pIdx].expenses[rIdx].vat = 0;
+    projects[pIdx].expenses[rIdx].fromScanner = false;
+  } else {
+    const amt = n(projects[pIdx].expenses[rIdx].amt);
+    projects[pIdx].expenses[rIdx].vat = +(amt * 15 / 115).toFixed(2);
+  }
+  save();
+  // update VAT display
+  const vatEl = document.getElementById('vat-'+pIdx+'-'+rIdx);
+  const labelEl = document.querySelector('#vat-toggle-wrap-'+pIdx+'-'+rIdx+' .vat-toggle-text');
+  if(vatEl){
+    if(checked){
+      const amt = n(projects[pIdx].expenses[rIdx].amt);
+      const vat = amt * 15 / 115;
+      vatEl.textContent = fmt(vat) + ' ر.س';
+      vatEl.className = 'vat-display vat-active';
+    } else {
+      vatEl.textContent = '—';
+      vatEl.className = 'vat-display vat-zero';
+    }
+  }
+  if(labelEl) labelEl.textContent = checked ? 'يوجد ضريبة 15%' : 'لا توجد ضريبة';
+  updateNetDisplay(pIdx);
 }
 
 function buildProjectPanel(p, pIdx){
@@ -720,35 +935,99 @@ function deleteProj(pIdx){
 }
 
 /* ── Manager ── */
-function addManagerSales(){
-  const pnum=document.getElementById('m-pnum').value.trim();
-  const pname=document.getElementById('m-pname').value.trim();
-  const sales=parseFloat(document.getElementById('m-sales').value)||0;
-  if(!pnum||!pname) return alert('أكمل البيانات');
-  managerSales.push({pnum,pname,sales}); saveSales(); updateDashboard();
-  ['m-pnum','m-pname','m-sales'].forEach(id=>document.getElementById(id).value='');
-  toast('تم إضافة المبيعات');
+
+/* ════════════════════════════════════════════════════════════════
+   ACCOUNTING DATA  (stored in localStorage)
+════════════════════════════════════════════════════════════════ */
+let vatPayments  = JSON.parse(localStorage.getItem('fl_vat_payments')  || '[]');
+let settlements  = JSON.parse(localStorage.getItem('fl_settlements')   || '[]');
+
+function saveVat()  { localStorage.setItem('fl_vat_payments', JSON.stringify(vatPayments)); }
+function saveSettl(){ localStorage.setItem('fl_settlements',  JSON.stringify(settlements)); }
+
+/* ── Manager sub-tabs ────────────────────────────────────────── */
+function showMgrTab(id){
+  document.querySelectorAll('.mgr-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mgr-panel').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+  const tabs = document.querySelectorAll('.mgr-tab');
+  const map = {'tab-projects':0,'tab-vat':1,'tab-custody':2,'tab-income':3};
+  if(tabs[map[id]]) tabs[map[id]].classList.add('active');
+  if(id==='tab-vat')     renderVatTab();
+  if(id==='tab-custody') renderCustodyTab();
+  if(id==='tab-income')  renderIncomeStatement();
+  if(id==='tab-projects')updateDashboard();
 }
+
+/* ════════════════════════════════════════════════════════════════
+   PROJECTS / SALES
+════════════════════════════════════════════════════════════════ */
+function addManagerSales(){
+  const pnum     = document.getElementById('m-pnum').value.trim();
+  const pname    = document.getElementById('m-pname').value.trim();
+  const sales    = parseFloat(document.getElementById('m-sales').value)||0;
+  const received = parseFloat(document.getElementById('m-received').value)||0;
+  const date     = document.getElementById('m-date').value || today();
+  if(!pnum||!pname) return alert('أكمل البيانات: رقم المشروع واسمه مطلوبان');
+  managerSales.push({pnum, pname, sales, received, date, id:Date.now()});
+  saveSales();
+  updateDashboard();
+  ['m-pnum','m-pname','m-sales','m-received','m-date'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  toast('✓ تم حفظ بيانات المشروع');
+}
+
+function deleteManagerSale(id){
+  if(!confirm('حذف هذا المشروع من سجل الإدارة؟')) return;
+  managerSales = managerSales.filter(x=>x.id!==id);
+  saveSales(); updateDashboard();
+  toast('تم الحذف');
+}
+
 function updateDashboard(){
-  let totalSales=managerSales.reduce((s,x)=>s+x.sales,0), totalExp=0;
-  let expMap={};
-  projects.forEach(p=>{
-    let pExp=p.expenses.reduce((s,e)=>s+n(e.amt),0);
-    expMap[p.pnum]=(expMap[p.pnum]||0)+pExp; totalExp+=pExp;
-  });
-  const body=document.getElementById('income-table-body'); body.innerHTML='';
+  /* ── totals ── */
+  let totalContract=0, totalReceived=0, totalExp=0, totalVat=0;
+  let expMap={}, vatMap={};
+
   managerSales.forEach(ms=>{
-    let e=expMap[ms.pnum]||0, net=ms.sales-e;
-    body.innerHTML+=`<tr>
-      <td>${esc(ms.pnum)}</td><td>${esc(ms.pname)}</td>
-      <td>${fmt(ms.sales)}</td>
-      <td style="color:var(--gold);">${fmt(e)}</td>
-      <td style="font-weight:800;color:${net>=0?'var(--teal)':'var(--danger)'}">${fmt(net)}</td></tr>`;
+    totalContract += n(ms.sales);
+    totalReceived += n(ms.received||0);
   });
+
+  projects.forEach(p=>{
+    let pExp = p.expenses.reduce((s,e)=>s+n(e.amt),0);
+    let pVat = p.expenses.reduce((s,e)=>s+n(e.vat),0);
+    expMap[p.pnum] = (expMap[p.pnum]||0) + pExp;
+    vatMap[p.pnum] = (vatMap[p.pnum]||0) + pVat;
+    totalExp += pExp;
+    totalVat += pVat;
+  });
+
+  const totalNet = totalReceived - totalExp;
+
+  /* ── summary cards ── */
   document.getElementById('db-summary').innerHTML=`
-    <div class="stat-card"><h5>إجمالي المبيعات</h5><div class="big val-green">${fmt(totalSales)}</div><span style="color:var(--text-muted);font-size:0.8rem;">ر.س</span></div>
+    <div class="stat-card"><h5>إجمالي العقود</h5><div class="big" style="color:var(--text)">${fmt(totalContract)}</div><span style="color:var(--text-muted);font-size:0.8rem;">ر.س</span></div>
+    <div class="stat-card"><h5>محوّل من العملاء</h5><div class="big val-green">${fmt(totalReceived)}</div><span style="color:var(--text-muted);font-size:0.8rem;">ر.س</span></div>
     <div class="stat-card"><h5>إجمالي المصروفات</h5><div class="big val-gold">${fmt(totalExp)}</div><span style="color:var(--text-muted);font-size:0.8rem;">ر.س</span></div>
-    <div class="stat-card"><h5>صافي الربح</h5><div class="big" style="color:${(totalSales-totalExp)>=0?'var(--teal)':'var(--danger)'}">${fmt(totalSales-totalExp)}</div><span style="color:var(--text-muted);font-size:0.8rem;">ر.س</span></div>`;
+    <div class="stat-card"><h5>الرصيد الصافي</h5><div class="big ${totalNet>=0?'val-green':'val-red'}">${fmt(totalNet)}</div><span style="color:var(--text-muted);font-size:0.8rem;">ر.س</span></div>`;
+
+  /* ── projects table ── */
+  const body = document.getElementById('projects-table-body');
+  if(!body) return;
+  body.innerHTML = managerSales.map(ms=>{
+    const e = expMap[ms.pnum]||0;
+    const net = n(ms.received||0) - e;
+    return `<tr>
+      <td>${esc(ms.pnum)}</td>
+      <td>${esc(ms.pname)}</td>
+      <td style="color:var(--text)">${fmt(ms.sales)}</td>
+      <td style="color:var(--teal)">${fmt(ms.received||0)}</td>
+      <td style="color:var(--gold)">${fmt(e)}</td>
+      <td style="color:${net>=0?'var(--teal)':'var(--danger)'};font-weight:800">${fmt(net)}</td>
+      <td style="color:var(--text-muted);font-size:0.8rem">${ms.date||''}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:0.75rem;" onclick="deleteManagerSale(${ms.id})">×</button></td>
+    </tr>`;
+  }).join('');
 }
 
 /* ── PRINT ── */
@@ -820,6 +1099,301 @@ function printDaily(pIdx){
   window.print();
 }
 
+
+/* ════════════════════════════════════════════════════════════════
+   VAT TAB
+════════════════════════════════════════════════════════════════ */
+function addVatPayment(){
+  const type = document.getElementById('vat-pay-type').value;
+  const amt  = parseFloat(document.getElementById('vat-pay-amt').value)||0;
+  const ref  = document.getElementById('vat-pay-ref').value.trim();
+  const date = document.getElementById('vat-pay-date').value || today();
+  if(!amt) return alert('أدخل المبلغ');
+  vatPayments.push({id:Date.now(), type, amt, ref, date});
+  saveVat(); renderVatTab();
+  ['vat-pay-amt','vat-pay-ref','vat-pay-date'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  toast('✓ تم تسجيل سداد الضريبة');
+}
+
+function deleteVatPayment(id){
+  vatPayments = vatPayments.filter(x=>x.id!==id);
+  saveVat(); renderVatTab();
+}
+
+function renderVatTab(){
+  /* totals */
+  const totalVatFromExp = projects.reduce((s,p)=>s+p.expenses.reduce((ss,e)=>ss+n(e.vat),0),0);
+  const totalVatPaidBank = vatPayments.filter(x=>x.type==='bank').reduce((s,x)=>s+n(x.amt),0);
+  const totalVatRefund   = vatPayments.filter(x=>x.type==='refund').reduce((s,x)=>s+n(x.amt),0);
+  const vatDue = totalVatFromExp - totalVatPaidBank + totalVatRefund;
+  const totalReceived = managerSales.reduce((s,ms)=>s+n(ms.received||0),0);
+  // VAT collected from client = 15/115 of total received
+  const vatCollected = totalReceived * 15 / 115;
+  const vatNetDue = vatCollected - totalVatPaidBank;
+
+  document.getElementById('vat-summary-cards').innerHTML=`
+    <div class="acct-card gold">
+      <h5>VAT على المصروفات (من الفواتير)</h5>
+      <div class="acct-val">${fmt(totalVatFromExp)}</div>
+      <div class="acct-sub">مجموع ضريبة المشتريات المسجّلة بالباركود</div>
+    </div>
+    <div class="acct-card green">
+      <h5>VAT المحصّل من العملاء</h5>
+      <div class="acct-val">${fmt(vatCollected)}</div>
+      <div class="acct-sub">15% من المبالغ المحوّلة (${fmt(totalReceived)} ر.س)</div>
+    </div>
+    <div class="acct-card purple">
+      <h5>إجمالي المسدد للبنك</h5>
+      <div class="acct-val">${fmt(totalVatPaidBank)}</div>
+      <div class="acct-sub">مدفوعات لهيئة الزكاة والضريبة</div>
+    </div>
+    <div class="acct-card ${vatNetDue>=0?'red':'green'}">
+      <h5>المبلغ المستحق للضريبة</h5>
+      <div class="acct-val">${fmt(Math.abs(vatNetDue))}</div>
+      <div class="acct-sub">${vatNetDue>=0?'مستحق الدفع للهيئة':'فائض / استرداد'}</div>
+    </div>`;
+
+  /* payments table */
+  const body = document.getElementById('vat-payments-body');
+  if(!body) return;
+  if(!vatPayments.length){
+    body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">لا توجد مدفوعات مسجلة</td></tr>';
+    return;
+  }
+  body.innerHTML = [...vatPayments].reverse().map(x=>`<tr>
+    <td>${x.date}</td>
+    <td><span class="${x.type==='bank'?'badge-deficit':'badge-surplus'}">${x.type==='bank'?'سداد للبنك':'استرداد'}</span></td>
+    <td style="font-weight:700;color:${x.type==='bank'?'var(--gold)':'var(--teal)'}">${fmt(x.amt)} ر.س</td>
+    <td style="color:var(--text-muted)">${x.ref||'—'}</td>
+    <td><button class="btn btn-danger" style="padding:4px 10px;font-size:0.75rem;" onclick="deleteVatPayment(${x.id})">×</button></td>
+  </tr>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CUSTODY / SETTLEMENTS TAB
+════════════════════════════════════════════════════════════════ */
+function renderCustodyTab(){
+  /* populate employee dropdown */
+  const empSel = document.getElementById('settle-emp');
+  const projSel = document.getElementById('settle-proj');
+  if(!empSel||!projSel) return;
+
+  const emps = [...new Set(projects.map(p=>p.emp).filter(Boolean))];
+  empSel.innerHTML = '<option value="">— اختر موظف —</option>' +
+    emps.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+
+  projSel.innerHTML = '<option value="">— اختر مشروع —</option>' +
+    projects.map((p,i)=>`<option value="${i}">${esc(p.pname)} (${esc(p.pnum)})</option>`).join('');
+
+  /* auto-fill spent amount when project changes */
+  projSel.onchange = function(){
+    const pi = parseInt(this.value);
+    const spentEl = document.getElementById('settle-spent');
+    if(!isNaN(pi) && projects[pi]){
+      const spent = projects[pi].expenses.reduce((s,e)=>s+n(e.amt),0);
+      if(spentEl) spentEl.value = spent.toFixed(2);
+    }
+  };
+
+  /* summary cards */
+  const totalGranted   = settlements.reduce((s,x)=>s+n(x.granted),0);
+  const totalSpentSetl = settlements.reduce((s,x)=>s+n(x.spent),0);
+  const totalSurplus   = settlements.filter(x=>n(x.granted)>=n(x.spent)).reduce((s,x)=>s+(n(x.granted)-n(x.spent)),0);
+  const totalDeficit   = settlements.filter(x=>n(x.granted)<n(x.spent)).reduce((s,x)=>s+(n(x.spent)-n(x.granted)),0);
+
+  document.getElementById('custody-summary-cards').innerHTML=`
+    <div class="acct-card gold">
+      <h5>إجمالي العهد الممنوحة</h5>
+      <div class="acct-val">${fmt(totalGranted)}</div>
+      <div class="acct-sub">مجموع ما صرف للموظفين</div>
+    </div>
+    <div class="acct-card purple">
+      <h5>إجمالي المصروف الفعلي</h5>
+      <div class="acct-val">${fmt(totalSpentSetl)}</div>
+      <div class="acct-sub">من التسويات المسجّلة</div>
+    </div>
+    <div class="acct-card green">
+      <h5>الفائض المُعاد</h5>
+      <div class="acct-val">${fmt(totalSurplus)}</div>
+      <div class="acct-sub">عهدة زادت عن الحاجة</div>
+    </div>
+    <div class="acct-card red">
+      <h5>العجز المستحق</h5>
+      <div class="acct-val">${fmt(totalDeficit)}</div>
+      <div class="acct-sub">صرف زاد عن العهدة</div>
+    </div>`;
+
+  /* settlements table */
+  const body = document.getElementById('settlements-body');
+  if(!body) return;
+  if(!settlements.length){
+    body.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">لا توجد تسويات مسجّلة</td></tr>';
+  } else {
+    body.innerHTML = [...settlements].reverse().map(x=>{
+      const diff = n(x.granted) - n(x.spent);
+      return `<tr>
+        <td style="font-weight:700">${esc(x.emp)}</td>
+        <td>${esc(x.pname)}</td>
+        <td style="color:var(--gold)">${fmt(x.granted)}</td>
+        <td style="color:var(--text)">${fmt(x.spent)}</td>
+        <td class="${diff>=0?'settle-badge-surplus':'settle-badge-deficit'}">${diff>=0?'+':''}${fmt(diff)}</td>
+        <td style="color:var(--text-muted);font-size:0.8rem">${x.date}</td>
+        <td style="color:var(--text-muted);font-size:0.8rem">${esc(x.notes||'')}</td>
+        <td><button class="btn btn-danger" style="padding:4px 10px;font-size:0.75rem;" onclick="deleteSettlement(${x.id})">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* per-employee summary */
+  const empMap = {};
+  projects.forEach(p=>{
+    if(!p.emp) return;
+    if(!empMap[p.emp]) empMap[p.emp]={granted:0,spent:0,vatPaid:0};
+    empMap[p.emp].spent += p.expenses.reduce((s,e)=>s+n(e.amt),0);
+    empMap[p.emp].vatPaid += p.expenses.reduce((s,e)=>s+n(e.vat),0);
+  });
+  settlements.forEach(x=>{
+    if(!empMap[x.emp]) empMap[x.emp]={granted:0,spent:0,vatPaid:0};
+    empMap[x.emp].granted += n(x.granted);
+  });
+
+  const empEl = document.getElementById('emp-custody-summary');
+  if(!empEl) return;
+  const empKeys = Object.keys(empMap);
+  if(!empKeys.length){ empEl.innerHTML='<p style="color:var(--text-muted);padding:12px;">لا توجد بيانات موظفين</p>'; return; }
+  empEl.innerHTML = empKeys.map(emp=>{
+    const d = empMap[emp];
+    const diff = d.granted - d.spent;
+    return `<div class="emp-settle-row">
+      <div class="emp-name">👤 ${esc(emp)}</div>
+      <div class="emp-nums">
+        <span><span class="em-lbl">عهدة ممنوحة: </span><span class="em-val" style="color:var(--gold)">${fmt(d.granted)} ر.س</span></span>
+        <span><span class="em-lbl">مصروف فعلي: </span><span class="em-val">${fmt(d.spent)} ر.س</span></span>
+        <span><span class="em-lbl">VAT المصروفات: </span><span class="em-val" style="color:var(--purple-light)">${fmt(d.vatPaid)} ر.س</span></span>
+      </div>
+      <span class="${diff>0?'badge-surplus':diff<0?'badge-deficit':'badge-balanced'}">${diff>0?'فائض '+fmt(diff)+' ر.س':diff<0?'عجز '+fmt(Math.abs(diff))+' ر.س':'متوازن'}</span>
+    </div>`;
+  }).join('');
+}
+
+function addSettlement(){
+  const empVal  = document.getElementById('settle-emp').value;
+  const projVal = document.getElementById('settle-proj').value;
+  const granted = parseFloat(document.getElementById('settle-granted').value)||0;
+  const spentEl = document.getElementById('settle-spent');
+  const spent   = parseFloat(spentEl?spentEl.value:0)||0;
+  const date    = document.getElementById('settle-date').value || today();
+  const notes   = document.getElementById('settle-notes').value.trim();
+  if(!empVal) return alert('اختر الموظف');
+  if(!projVal) return alert('اختر المشروع');
+  if(!granted) return alert('أدخل مبلغ العهدة الممنوحة');
+
+  const proj = projects[parseInt(projVal)];
+  settlements.push({
+    id: Date.now(),
+    emp: empVal,
+    pname: proj?proj.pname:'',
+    pnum: proj?proj.pnum:'',
+    granted, spent, date, notes
+  });
+  saveSettl();
+
+  /* push to income statement */
+  renderCustodyTab();
+  renderIncomeStatement();
+  toast('✓ تم تسجيل التسوية وترحيلها لقائمة الدخل');
+}
+
+function deleteSettlement(id){
+  settlements = settlements.filter(x=>x.id!==id);
+  saveSettl(); renderCustodyTab(); renderIncomeStatement();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INCOME STATEMENT
+════════════════════════════════════════════════════════════════ */
+function renderIncomeStatement(){
+  const expMap={}, vatMap={}, incMap={};
+  projects.forEach(p=>{
+    expMap[p.pnum] = (expMap[p.pnum]||0) + p.expenses.reduce((s,e)=>s+n(e.amt),0);
+    vatMap[p.pnum] = (vatMap[p.pnum]||0) + p.expenses.reduce((s,e)=>s+n(e.vat),0);
+    incMap[p.pnum] = (incMap[p.pnum]||0) + p.incomes.reduce((s,i)=>s+n(i.amt),0);
+  });
+  const settleMap={};
+  settlements.forEach(x=>{ settleMap[x.pnum]=(settleMap[x.pnum]||0)+(n(x.granted)-n(x.spent)); });
+
+  let totContract=0,totReceived=0,totExp=0,totVat=0,totSetl=0,totNet=0;
+
+  const body = document.getElementById('income-table-body');
+  if(!body) return;
+  body.innerHTML = managerSales.map(ms=>{
+    const exp      = expMap[ms.pnum]||0;
+    const vat      = vatMap[ms.pnum]||0;
+    const setlAdj  = settleMap[ms.pnum]||0; // positive = surplus returned
+    const received = n(ms.received||0);
+    const net      = received - exp + setlAdj;
+    totContract += n(ms.sales); totReceived += received;
+    totExp += exp; totVat += vat; totSetl += setlAdj; totNet += net;
+
+    const status = received===0?'<span class="badge-deficit">لم يُحوَّل</span>':
+                   net>0?'<span class="badge-surplus">ربح</span>':
+                   net<0?'<span class="badge-deficit">خسارة</span>':
+                   '<span class="badge-balanced">متعادل</span>';
+    return `<tr class="${net>0?'profit-row':net<0?'loss-row':'pending-row'}">
+      <td><strong>${esc(ms.pname)}</strong><br><small style="color:var(--text-muted)">${esc(ms.pnum)}</small></td>
+      <td>${fmt(ms.sales)}</td>
+      <td style="color:var(--teal)">${fmt(received)}</td>
+      <td style="color:var(--gold)">${fmt(exp)}</td>
+      <td style="color:var(--purple-light)">${fmt(vat)}</td>
+      <td style="color:${setlAdj>=0?'var(--teal)':'var(--danger)'}">${setlAdj>=0?'+':''}${fmt(setlAdj)}</td>
+      <td style="color:${net>=0?'var(--teal)':'var(--danger)'};font-weight:800;">${fmt(net)}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+
+  /* totals row */
+  body.innerHTML += `<tr style="background:var(--dark2);border-top:2px solid var(--gold-border);">
+    <td><strong style="color:var(--gold)">الإجماليات</strong></td>
+    <td><strong>${fmt(totContract)}</strong></td>
+    <td><strong style="color:var(--teal)">${fmt(totReceived)}</strong></td>
+    <td><strong style="color:var(--gold)">${fmt(totExp)}</strong></td>
+    <td><strong style="color:var(--purple-light)">${fmt(totVat)}</strong></td>
+    <td><strong>${fmt(totSetl)}</strong></td>
+    <td><strong style="color:${totNet>=0?'var(--teal)':'var(--danger)'};font-size:1.05rem;">${fmt(totNet)}</strong></td>
+    <td></td>
+  </tr>`;
+
+  /* summary cards */
+  const cards = document.getElementById('income-summary-cards');
+  if(!cards) return;
+  cards.innerHTML=`
+    <div class="acct-card gold">
+      <h5>إجمالي قيمة العقود</h5>
+      <div class="acct-val">${fmt(totContract)}</div>
+      <div class="acct-sub">القيمة الإجمالية للمشاريع المتعاقد عليها</div>
+    </div>
+    <div class="acct-card green">
+      <h5>المحوّل من العملاء</h5>
+      <div class="acct-val">${fmt(totReceived)}</div>
+      <div class="acct-sub">ما تم استلامه فعلياً</div>
+    </div>
+    <div class="acct-card gold">
+      <h5>إجمالي المصروفات</h5>
+      <div class="acct-val">${fmt(totExp)}</div>
+      <div class="acct-sub">عهد الموظفين الميدانية</div>
+    </div>
+    <div class="acct-card purple">
+      <h5>إجمالي VAT</h5>
+      <div class="acct-val">${fmt(totVat)}</div>
+      <div class="acct-sub">ضريبة القيمة المضافة على المصروفات</div>
+    </div>
+    <div class="acct-card ${totNet>=0?'green':'red'}">
+      <h5>صافي الربح / الخسارة</h5>
+      <div class="acct-val">${fmt(totNet)}</div>
+      <div class="acct-sub">${totNet>=0?'ربح صافي':'خسارة صافية'}</div>
+    </div>`;
+}
+
 function printManagerReport(){
   updateDashboard();
   let totalSales=managerSales.reduce((s,x)=>s+x.sales,0), totalExp=0;
@@ -850,6 +1424,61 @@ function printManagerReport(){
     `;
   window.print();
 }
+
+function printFullIncomeStatement(){
+  renderIncomeStatement();
+  const body = document.getElementById('income-table-body');
+  if(!body) return;
+  const tableHTML = body.closest('table')?.outerHTML || '';
+  const totReceived = managerSales.reduce((s,ms)=>s+n(ms.received||0),0);
+  const totExp = projects.reduce((s,p)=>s+p.expenses.reduce((ss,e)=>ss+n(e.amt),0),0);
+  const totVat = projects.reduce((s,p)=>s+p.expenses.reduce((ss,e)=>ss+n(e.vat),0),0);
+  const totVatPaid = vatPayments.filter(x=>x.type==='bank').reduce((s,x)=>s+n(x.amt),0);
+  const totSettlements = settlements.reduce((s,x)=>s+(n(x.granted)-n(x.spent)),0);
+  const vatDue = (totReceived*15/115) - totVatPaid;
+
+  document.getElementById('print-area').innerHTML=`
+    <div style="font-family:'Changa',sans-serif;direction:rtl;padding:20px;color:#1b143c;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:3px solid #C9A84C;">
+        <div>
+          <div style="font-size:18pt;font-weight:900;color:#1b143c;">قائمة الدخل الشاملة</div>
+          <div style="font-size:10pt;color:#666;">تاريخ الطباعة: ${today()}</div>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-size:9pt;color:#555;">Free Lines — النظام المالي</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
+        <div style="background:#f0faf8;border:1.5px solid #2CB5A0;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:8pt;color:#555;font-weight:700;">المحوّل من العملاء</div>
+          <div style="font-size:14pt;font-weight:900;color:#2CB5A0;">${fmt(totReceived)} ر.س</div>
+        </div>
+        <div style="background:#fef9e7;border:1.5px solid #C9A84C;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:8pt;color:#555;font-weight:700;">إجمالي المصروفات</div>
+          <div style="font-size:14pt;font-weight:900;color:#C9A84C;">${fmt(totExp)} ر.س</div>
+        </div>
+        <div style="background:#f5f0ff;border:1.5px solid #4c2e82;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:8pt;color:#555;font-weight:700;">VAT المستحق للهيئة</div>
+          <div style="font-size:14pt;font-weight:900;color:#4c2e82;">${fmt(Math.max(0,vatDue))} ر.س</div>
+        </div>
+        <div style="background:${(totReceived-totExp)>=0?'#f0faf8':'#fff0f0'};border:1.5px solid ${(totReceived-totExp)>=0?'#2CB5A0':'#dc2626'};border-radius:8px;padding:10px 14px;">
+          <div style="font-size:8pt;color:#555;font-weight:700;">صافي الربح</div>
+          <div style="font-size:14pt;font-weight:900;color:${(totReceived-totExp)>=0?'#2CB5A0':'#dc2626'}">${fmt(totReceived-totExp+totSettlements)} ر.س</div>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:9pt;">
+        ${tableHTML.replace(/<table[^>]*>/,'').replace('</table>','')}
+      </table>
+
+      <div style="margin-top:20px;padding-top:12px;border-top:2px solid #eee;font-size:8pt;color:#888;">
+        هذا التقرير سري ومخصص للإدارة فقط — تم توليده تلقائياً من النظام المالي
+      </div>
+    </div>`;
+  window.print();
+}
+
 
 /* ── Login ── */
 let currentUser = localStorage.getItem('fl_current_user') || '';
