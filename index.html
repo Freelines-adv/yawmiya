@@ -1504,11 +1504,48 @@ function requestNotifPerm(cb){
 
 /* ══ INSTALL BANNER ══ */
 let deferredPrompt = null;
+
+// iOS detection
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = ('standalone' in window.navigator) && window.navigator.standalone;
+
+// Show iOS install instructions automatically
+if(isIOS && !isInStandaloneMode){
+  window.addEventListener('load', ()=> setTimeout(showIOSBanner, 2000));
+}
+
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
   showInstallBanner();
 });
+
+function showIOSBanner(){
+  if(document.getElementById('install-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'install-banner';
+  b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1e1340,#2a1060);color:#fff;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.5);z-index:99999;font-family:Changa,sans-serif;direction:rtl;';
+  b.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <div style="font-size:1.8rem;">📲</div>
+      <div>
+        <div style="font-weight:700;font-size:.95rem;">ثبّت التطبيق على جوالك</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.7);">للوصول السريع وإشعارات العهد الفورية</div>
+      </div>
+      <button onclick="document.getElementById('install-banner').remove();" style="margin-right:auto;background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;">✕</button>
+    </div>
+    <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;font-size:.82rem;line-height:2;">
+      <div>١. اضغط زر <b style="color:#C9A84C;">المشاركة</b> 
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2" style="vertical-align:middle;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        في أسفل الشاشة
+      </div>
+      <div>٢. اختر <b style="color:#C9A84C;">"إضافة إلى الشاشة الرئيسية"</b></div>
+      <div>٣. اضغط <b style="color:#C9A84C;">"إضافة"</b></div>
+    </div>
+  `;
+  document.body.appendChild(b);
+  setTimeout(()=>{ if(b.parentElement) b.remove(); }, 20000);
+}
 
 function showInstallBanner(){
   if(document.getElementById('install-banner')) return;
