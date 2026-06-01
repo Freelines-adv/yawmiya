@@ -322,6 +322,7 @@ function doLogin(){
   if(loginMode==='employee' && found.role==='admin'){ err.textContent='استخدم بوابة الإدارة للدخول كمدير'; return; }
   err.textContent='';
   me = found;
+  requestNotifPerm();
   document.getElementById('scr-login').classList.remove('on');
   document.getElementById('app').style.display='block';
   document.getElementById('ah-user').innerHTML=
@@ -551,19 +552,14 @@ function buildAdmUsers(){
       <div class="gauto" style="margin-bottom:14px;">
         <div><label class="lbl">اسم الموظف</label><input type="text" id="nu-name" placeholder="اسم الموظف"></div>
         <div><label class="lbl">كلمة المرور</label><input type="password" id="nu-pass" placeholder="كلمة المرور"></div>
-        <div><label class="lbl">رقم الواتساب</label><input type="text" id="nu-phone" placeholder="مثال: 966501234567"></div>
-        <div><label class="lbl">CallMeBot API Key</label><input type="text" id="nu-apikey" placeholder="API Key من CallMeBot"></div>
+
       </div>
-      <div style="background:var(--dk4);border-radius:var(--rs);padding:10px;margin-bottom:12px;font-size:.78rem;color:var(--txm);line-height:1.7;">
-        📱 <b style="color:var(--gold);">تفعيل واتساب للموظف:</b> يرسل الموظف رسالة على واتساب للرقم <b style="color:var(--teal);">+34 644 59 77 09</b> بالنص:<br>
-        <span style="background:var(--dk2);padding:2px 8px;border-radius:4px;color:#fff;font-family:monospace;">I allow callmebot to send me messages</span><br>
-        ثم يأتيه API Key يضعه في الحقل أعلاه.
-      </div>
+
       <button class="btn" onclick="addUser()">+ إضافة موظف</button>
     </div>
     <div class="card">
       <div class="ct">📋 قائمة الموظفين</div>
-      <table><thead><tr><th>الاسم</th><th>الدور</th><th>الواتساب</th><th>إجمالي العهد</th><th>إجمالي المصروف</th><th>الرصيد</th><th></th></tr></thead>
+      <table><thead><tr><th>الاسم</th><th>الدور</th><th>إجمالي العهد</th><th>إجمالي المصروف</th><th>الرصيد</th><th></th></tr></thead>
       <tbody id="users-tb"></tbody></table>
     </div>`;
   renderUsers(pg); return pg;
@@ -581,7 +577,7 @@ function renderUsers(pg){
     return `<tr>
       <td><b>${esc(u.name)}</b></td>
       <td><span style="color:${u.role==='admin'?'var(--pur-l)':'var(--teal)'};">${u.role==='admin'?'إدارة':'موظف'}</span></td>
-      <td style="font-size:.78rem;color:${u.phone?'var(--teal)':'var(--txm)'};">${u.phone?'✅ '+esc(u.phone):'—'}</td>
+
       <td class="num green">${fmt(given)}</td>
       <td class="num red">${fmt(spent)}</td>
       <td class="num" style="font-weight:800;color:${balColor}">${fmt(bal)}</td>
@@ -591,11 +587,10 @@ function renderUsers(pg){
 function addUser(){
   const name=document.getElementById('nu-name').value.trim();
   const pass=document.getElementById('nu-pass').value.trim();
-  const phone=document.getElementById('nu-phone').value.trim();
-  const apikey=document.getElementById('nu-apikey').value.trim();
+
   if(!name||!pass){ toast('أكمل بيانات الموظف'); return; }
   if(users.find(u=>u.name===name)){ toast('الاسم مستخدم من قبل'); return; }
-  users.push({id:uid(),name,pass,phone,apikey,role:'employee'});
+  users.push({id:uid(),name,pass,role:'employee'});
   dump(K.users,users); renderUsers();
   document.getElementById('nu-name').value='';
   document.getElementById('nu-pass').value='';
@@ -714,25 +709,7 @@ function renderCustody(pg){
   }
 }
 
-/* ══ WHATSAPP GROUP NOTIFICATION ══ */
-const WA_GROUP = 'https://chat.whatsapp.com/KZul8cjeb0s5GC7xxOOiBY';
-function sendWhatsApp(empName, amt, note){
-  // handled via showWaBtn
-}
-function openWaGroup(empName, amt, note){
-  const msg = encodeURIComponent(
-    '💼 *إشعار عهدة جديدة*\n' +
-    '━━━━━━━━━━━━━━━━\n' +
-    '👤 الموظف: ' + empName + '\n' +
-    '💰 المبلغ: ' + Number(amt).toLocaleString('ar-SA',{minimumFractionDigits:2}) + ' ر.س\n' +
-    (note ? '📝 البيان: ' + note + '\n' : '') +
-    '📅 التاريخ: ' + new Date().toLocaleDateString('ar-SA') + '\n' +
-    '━━━━━━━━━━━━━━━━\n' +
-    '✅ تم تحويل المبلغ لحسابك'
-  );
-  window.open(WA_GROUP, '_blank');
-  setTimeout(()=>{ navigator.clipboard.writeText(decodeURIComponent(msg)).catch(()=>{}); }, 500);
-}
+/* ══ CUSTODY NOTIFICATION via Push Only ══ */
 
 function addCustody(){
   const empName=document.getElementById('cus-emp').value;
@@ -750,27 +727,7 @@ function addCustody(){
   document.getElementById('cus-amt').value='';
   document.getElementById('cus-note').value='';
   toast('✓ تم تسجيل العهدة');
-  showWaBtn(empName, amt, note);
   sendPushNotification(empName, amt, note);
-}
-function showWaBtn(empName, amt, note){
-  const old = document.getElementById('wa-banner');
-  if(old) old.remove();
-  const banner = document.createElement('div');
-  banner.id = 'wa-banner';
-  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#25D366;color:#fff;border-radius:14px;padding:14px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:9999;font-family:Changa,sans-serif;direction:rtl;max-width:90vw;';
-  const safeNote = note.replace(/'/g, "\\'");
-  banner.innerHTML = `
-    <svg width="28" height="28" viewBox="0 0 32 32" fill="white"><path d="M16 2C8.28 2 2 8.28 2 16c0 2.44.65 4.73 1.79 6.71L2 30l7.53-1.97A13.9 13.9 0 0 0 16 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm6.94 19.38c-.29.82-1.7 1.57-2.33 1.63-.6.06-1.17.28-3.94-.82-3.32-1.32-5.46-4.72-5.62-4.94-.16-.22-1.29-1.72-1.29-3.28s.82-2.33 1.11-2.65c.29-.32.63-.4.84-.4h.6c.19 0 .45-.07.7.54.26.63.88 2.17.96 2.33.08.16.13.35.03.56-.1.21-.16.34-.31.52-.16.18-.33.4-.47.54-.16.16-.33.33-.14.65.19.32.84 1.38 1.8 2.24 1.24 1.1 2.28 1.44 2.6 1.6.32.16.51.13.7-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.83.86 2.14 1.02.32.16.53.24.61.37.08.14.08.79-.21 1.58z"/></svg>
-    <div>
-      <div style="font-weight:700;font-size:.95rem;">إرسال إشعار للجروب</div>
-      <div style="font-size:.78rem;opacity:.9;">الرسالة ستُنسخ تلقائياً — الصقها في الجروب</div>
-    </div>
-    <button onclick="openWaGroup('${empName}',${amt},'${safeNote}');this.parentElement.remove();" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:Changa,sans-serif;font-size:.85rem;white-space:nowrap;">📲 فتح الجروب</button>
-    <button onclick="this.parentElement.remove();" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0 4px;">✕</button>
-  `;
-  document.body.appendChild(banner);
-  setTimeout(()=>{ if(banner.parentElement) banner.remove(); }, 15000);
 }
 function delCustody(i){
   if(!confirm('حذف هذه العهدة؟')) return;
@@ -1489,10 +1446,17 @@ if('serviceWorker' in navigator){
 function sendPushNotification(empName, amt, note){
   const title = '💼 عهدة جديدة';
   const body = '👤 ' + empName + '  |  💰 ' + Number(amt).toLocaleString('ar-SA',{minimumFractionDigits:2}) + ' ر.س' + (note ? '\n📝 ' + note : '');
-  if(window.swReg && Notification.permission === 'granted'){
-    window.swReg.active?.postMessage({ type:'NOTIFY', title, body });
-  } else if(Notification.permission === 'granted'){
-    new Notification(title, { body, dir:'rtl' });
+  if(!('Notification' in window)){ return; }
+  if(Notification.permission === 'granted'){
+    if(window.swReg){
+      window.swReg.showNotification(title, { body, dir:'rtl', vibrate:[200,100,200], tag:'custody' });
+    } else {
+      new Notification(title, { body, dir:'rtl' });
+    }
+  } else if(Notification.permission !== 'denied'){
+    Notification.requestPermission().then(p => {
+      if(p === 'granted') sendPushNotification(empName, amt, note);
+    });
   }
 }
 
