@@ -1179,13 +1179,14 @@ function buildEmpJournals(){
   const myP=projects.filter(p=>p.owner===me.name);
   const given=totalCustodyGiven(me.name);
   const spent=totalEmpSpent(me.name);
-  const bal=given-spent;
+  const custodySpent=projects.filter(p=>p.owner===me.name).reduce((s,p)=>s+p.expenses.filter(e=>(e.src||'custody')==='custody').reduce((x,e)=>x+n(e.amt)+n(e.vat),0),0);
+  const bal=given-custodySpent;
   pg.innerHTML=`
     <!-- رصيد العهدة للموظف -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;">
       <div class="sb" style="border-color:var(--gold-b)"><label>إجمالي العهدة المستلمة</label><div class="bv gold">${fmt(given)} ر.س</div></div>
-      <div class="sb"><label>إجمالي المصروف</label><div class="bv red">${fmt(spent)} ر.س</div></div>
-      <div class="sb" style="border-color:var(--${bal>=0?'teal':'red'}-b)"><label>الرصيد المتبقي</label>
+      <div class="sb"><label>💼 مصروف من العهدة</label><div class="bv red">${fmt(custodySpent)} ر.س</div></div>
+      <div class="sb" style="border-color:var(--${bal>=0?'teal':'red'}-b)"><label>رصيد العهدة المتبقي</label>
         <div class="bv ${bal>=0?'green':'red'}">${fmt(bal)} ر.س</div></div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
@@ -1237,7 +1238,7 @@ function openNewJournal(){
       </div>
     </div>
     <div class="card" style="border-right:4px solid var(--gold);">
-      <div class="ct">📤 المصروفات <span style="font-size:.73rem;color:var(--teal);margin-right:8px;">✓ حدّد إذا يوجد VAT</span></div>
+      <div class="ct">📤 المصروفات <span style="font-size:.73rem;color:var(--teal);margin-right:8px;">✓ حدّد المصدر والـ VAT لكل بند</span></div>
       <div id="new-exps">${buildNewExpRow()}</div>
       <button class="btn btn-g" style="margin-top:8px;width:100%;" onclick="addNeRow()">+ إضافة مصروف</button>
     </div>
@@ -1254,6 +1255,7 @@ function fillProjName(){
   }
 }
 function buildNewExpRow(){
+  const srcOpts = EXP_SOURCES.map(s=>`<option value="${s.val}">${s.icon} ${s.label}</option>`).join('');
   return `<div class="er">
     <div class="er-grid">
       <div><label class="lbl">البيان</label><input type="text" placeholder="وصف المصروف" class="ne-desc"></div>
@@ -1263,6 +1265,12 @@ function buildNewExpRow(){
       <div><label class="lbl">VAT 15%</label>
         <div class="vat-val vat-off ne-vatdis">0.00 ر.س</div>
         <input type="hidden" class="ne-vat" value="0"></div>
+    </div>
+    <div style="margin:6px 0;">
+      <label class="lbl">📦 مصدر المبلغ</label>
+      <select class="ne-src" style="width:100%;padding:7px;border-radius:var(--rs);background:var(--dk3);color:var(--tx);border:1px solid var(--dk4);font-family:Changa,sans-serif;">
+        ${srcOpts}
+      </select>
     </div>
     <div class="er-bot">
       <label class="vat-chk">
@@ -1394,15 +1402,10 @@ function saveNewJournal(){
     date:r.querySelector('.ne-date').value,
     amt:n(r.querySelector('.ne-amt').value),
     vat:n(r.querySelector('.ne-vat').value),
-    hasVat:r.querySelector('.ne-hasvat').checked
+    hasVat:r.querySelector('.ne-hasvat').checked,
+    src:r.querySelector('.ne-src').value
   })).filter(e=>e.desc||e.amt);
-    const incomes=[...document.querySelectorAll('#new-incs .ni-row')].map(r=>({
-    src:r.querySelector('.ni-src').value,
-    date:r.querySelector('.ni-date').value,
-    amt:n(r.querySelector('.ni-amt').value),
-    note:r.querySelector('.ni-note').value.trim()
-  })).filter(i=>i.amt>0);
-  projects.push({id:uid(),owner:me.name,emp:me.name,pnum,pname,qnum,client,date,incomes,expenses});
+  projects.push({id:uid(),owner:me.name,emp:me.name,pnum,pname,qnum,client,date,expenses});
   dump(K.projects,projects);
   toast('✓ تم حفظ اليومية'); backToList(); refreshJournalList();
 }
@@ -1410,6 +1413,9 @@ function openJournal(pi){
   const p=projects[pi];
   const tExp=p.expenses.reduce((s,e)=>s+n(e.amt)+n(e.vat),0);
   const tVat=p.expenses.reduce((s,e)=>s+n(e.vat),0);
+  const tCustody=p.expenses.filter(e=>(e.src||'custody')==='custody').reduce((s,e)=>s+n(e.amt)+n(e.vat),0);
+  const tBank=p.expenses.filter(e=>e.src==='bank').reduce((s,e)=>s+n(e.amt)+n(e.vat),0);
+  const tExchange=p.expenses.filter(e=>e.src==='exchange').reduce((s,e)=>s+n(e.amt)+n(e.vat),0);
   const det=document.getElementById('journal-detail');
   document.getElementById('jl-list').style.display='none';
   det.style.display='block';
@@ -1430,10 +1436,12 @@ function openJournal(pi){
         <div><label class="lbl">التاريخ</label><input type="date" value="${p.date}" onblur="setJF(${pi},'date',this.value)"></div>
       </div>
     </div>
-    <div class="g2" style="margin-bottom:14px;">
-      <div class="sb" style="border-color:var(--teal-b);"><label>إجمالي الإيرادات</label><div class="bv green">${fmt((p.incomes||[]).reduce((s,i)=>s+n(i.amt),0))} ر.س</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px;">
       <div class="sb"><label>إجمالي المصروفات</label><div class="bv red">${fmt(tExp)} ر.س</div></div>
       <div class="sb"><label>منها VAT</label><div class="bv gold">${fmt(tVat)} ر.س</div></div>
+      ${tCustody>0?`<div class="sb" style="border-color:var(--gold-b)"><label>💼 من العهدة</label><div class="bv gold">${fmt(tCustody)} ر.س</div></div>`:''}
+      ${tBank>0?`<div class="sb" style="border-color:var(--teal-b)"><label>🏦 تحويل بنكي</label><div class="bv green">${fmt(tBank)} ر.س</div></div>`:''}
+      ${tExchange>0?`<div class="sb" style="border-color:var(--pur-b)"><label>💳 دفع بالصرف</label><div class="bv" style="color:var(--pur-l)">${fmt(tExchange)} ر.س</div></div>`:''}
     </div>
     <div class="card" style="border-right:4px solid var(--gold);">
       <div class="ct">📤 المصروفات</div>
@@ -1520,13 +1528,11 @@ function printDaily(pi){
   const p=projects[pi];
   const tExp=p.expenses.reduce((s,e)=>s+n(e.amt),0);
   const tVat=p.expenses.reduce((s,e)=>s+n(e.vat),0);
-  const tInc=(p.incomes||[]).reduce((s,i)=>s+n(i.amt),0);
-  const net=tInc-tExp;
-  const INC_SRC_LABEL={custody:'💼 من العهدة',bank:'🏦 تحويل بنكي',exchange:'💱 شراء من الصراف'};
+  const EXP_SRC_LABEL={custody:'💼 من العهدة',bank:'🏦 تحويل بنكي',exchange:'💳 دفع بالصرف'};
   document.getElementById('pa').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #4c2e82;">
       <div>
-        <div style="font-size:15pt;font-weight:900;color:#1a1a2e;">يومية مصروفات وإيرادات</div>
+        <div style="font-size:15pt;font-weight:900;color:#1a1a2e;">يومية مصروفات</div>
         <div style="font-size:9pt;color:#555;margin-top:4px;">${p.pname} — ${p.pnum||''}</div>
         <div style="font-size:9pt;color:#555;">العميل: ${esc(p.client)||'—'} | التاريخ: ${p.date}</div>
         <div style="font-size:9pt;color:#555;">الموظف: ${esc(p.emp||p.owner)}</div>
@@ -1534,49 +1540,24 @@ function printDaily(pi){
       <img src="${LOGO_URI}" alt="Free Lines" style="height:48px;object-fit:contain;">
     </div>
 
-    ${(p.incomes||[]).length?`
-    <div style="font-weight:800;font-size:10pt;color:#0f5b4a;margin-bottom:6px;">📥 الإيرادات</div>
-    <table class="pt" style="margin-bottom:14px;">
-      <thead><tr><th>المصدر</th><th>التاريخ</th><th>المبلغ</th><th>ملاحظة</th></tr></thead>
-      <tbody>
-        ${(p.incomes||[]).map(i=>`<tr>
-          <td>${INC_SRC_LABEL[i.src]||i.src}</td>
-          <td>${i.date||'—'}</td>
-          <td class="r" style="font-weight:700;">${fmt(i.amt)} ر.س</td>
-          <td style="color:#555;">${esc(i.note||'—')}</td>
-        </tr>`).join('')}
-        <tr style="background:#f0f8f5;font-weight:800;">
-          <td colspan="2">إجمالي الإيرادات</td>
-          <td class="r" style="color:#0f5b4a;">${fmt(tInc)} ر.س</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>`:''}
-
     <div style="font-weight:800;font-size:10pt;color:#7a2000;margin-bottom:6px;">📤 المصروفات</div>
     <table class="pt">
-      <thead><tr><th>البيان</th><th>التاريخ</th><th>المبلغ</th><th>VAT</th></tr></thead>
+      <thead><tr><th>البيان</th><th>التاريخ</th><th>مصدر المبلغ</th><th>المبلغ</th><th>VAT</th></tr></thead>
       <tbody>
         ${p.expenses.map(e=>`<tr>
           <td>${esc(e.desc||'—')}</td>
           <td>${e.date||'—'}</td>
+          <td>${EXP_SRC_LABEL[e.src||'custody']||'💼 من العهدة'}</td>
           <td class="r">${fmt(e.amt)} ر.س</td>
           <td class="r" style="color:#7a4400;">${e.vat>0?fmt(e.vat)+' ر.س':'—'}</td>
         </tr>`).join('')}
         <tr style="background:#fafaf0;font-weight:800;">
-          <td colspan="2">إجمالي المصروفات</td>
+          <td colspan="3">إجمالي المصروفات</td>
           <td class="r" style="color:#7a2000;">${fmt(tExp)} ر.س</td>
           <td class="r" style="color:#7a4400;">${fmt(tVat)} ر.س (VAT)</td>
         </tr>
       </tbody>
     </table>
-
-    <div style="margin-top:18px;padding:12px 16px;border-radius:8px;background:${net>=0?'#f0f8f5':'#fff5f5'};border:1.5px solid ${net>=0?'#2CB5A0':'#dc2626'};">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-weight:800;font-size:10pt;">الرصيد الصافي (إيرادات − مصروفات)</span>
-        <span style="font-size:14pt;font-weight:900;color:${net>=0?'#0f5b4a':'#dc2626'};">${fmt(net)} ر.س</span>
-      </div>
-    </div>
 
     <div class="sigs">
       <div><div class="sl">توقيع الموظف</div><div style="font-size:9pt;color:#555;margin-top:4px;">${esc(p.emp||p.owner)}</div></div>
