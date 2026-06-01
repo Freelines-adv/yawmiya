@@ -168,6 +168,14 @@ td.num{text-align:left;direction:ltr;}
 
 .bv.green{color:var(--teal);}
 </style>
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#130D2A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="النظام المالي">
+  <link rel="manifest" id="pwa-manifest">
 </head>
 <body>
 
@@ -706,22 +714,24 @@ function renderCustody(pg){
   }
 }
 
-/* ══ WHATSAPP NOTIFICATION ══ */
+/* ══ WHATSAPP GROUP NOTIFICATION ══ */
+const WA_GROUP = 'https://chat.whatsapp.com/KZul8cjeb0s5GC7xxOOiBY';
 function sendWhatsApp(empName, amt, note){
-  const emp = users.find(u => u.name === empName);
-  if(!emp || !emp.phone || !emp.apikey) return;
+  // handled via showWaBtn
+}
+function openWaGroup(empName, amt, note){
   const msg = encodeURIComponent(
     '💼 *إشعار عهدة جديدة*\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '👤 الموظف: ' + empName + '\n' +
-    '💰 المبلغ: ' + amt.toLocaleString('ar-SA',{minimumFractionDigits:2}) + ' ر.س\n' +
+    '💰 المبلغ: ' + Number(amt).toLocaleString('ar-SA',{minimumFractionDigits:2}) + ' ر.س\n' +
     (note ? '📝 البيان: ' + note + '\n' : '') +
     '📅 التاريخ: ' + new Date().toLocaleDateString('ar-SA') + '\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '✅ تم تحويل المبلغ لحسابك'
   );
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${emp.phone}&text=${msg}&apikey=${emp.apikey}`;
-  fetch(url).catch(()=>{});
+  window.open(WA_GROUP, '_blank');
+  setTimeout(()=>{ navigator.clipboard.writeText(decodeURIComponent(msg)).catch(()=>{}); }, 500);
 }
 
 function addCustody(){
@@ -740,6 +750,27 @@ function addCustody(){
   document.getElementById('cus-amt').value='';
   document.getElementById('cus-note').value='';
   toast('✓ تم تسجيل العهدة');
+  showWaBtn(empName, amt, note);
+  sendPushNotification(empName, amt, note);
+}
+function showWaBtn(empName, amt, note){
+  const old = document.getElementById('wa-banner');
+  if(old) old.remove();
+  const banner = document.createElement('div');
+  banner.id = 'wa-banner';
+  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#25D366;color:#fff;border-radius:14px;padding:14px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:9999;font-family:Changa,sans-serif;direction:rtl;max-width:90vw;';
+  const safeNote = note.replace(/'/g, "\\'");
+  banner.innerHTML = `
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="white"><path d="M16 2C8.28 2 2 8.28 2 16c0 2.44.65 4.73 1.79 6.71L2 30l7.53-1.97A13.9 13.9 0 0 0 16 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm6.94 19.38c-.29.82-1.7 1.57-2.33 1.63-.6.06-1.17.28-3.94-.82-3.32-1.32-5.46-4.72-5.62-4.94-.16-.22-1.29-1.72-1.29-3.28s.82-2.33 1.11-2.65c.29-.32.63-.4.84-.4h.6c.19 0 .45-.07.7.54.26.63.88 2.17.96 2.33.08.16.13.35.03.56-.1.21-.16.34-.31.52-.16.18-.33.4-.47.54-.16.16-.33.33-.14.65.19.32.84 1.38 1.8 2.24 1.24 1.1 2.28 1.44 2.6 1.6.32.16.51.13.7-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.83.86 2.14 1.02.32.16.53.24.61.37.08.14.08.79-.21 1.58z"/></svg>
+    <div>
+      <div style="font-weight:700;font-size:.95rem;">إرسال إشعار للجروب</div>
+      <div style="font-size:.78rem;opacity:.9;">الرسالة ستُنسخ تلقائياً — الصقها في الجروب</div>
+    </div>
+    <button onclick="openWaGroup('${empName}',${amt},'${safeNote}');this.parentElement.remove();" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:Changa,sans-serif;font-size:.85rem;white-space:nowrap;">📲 فتح الجروب</button>
+    <button onclick="this.parentElement.remove();" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0 4px;">✕</button>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(()=>{ if(banner.parentElement) banner.remove(); }, 15000);
 }
 function delCustody(i){
   if(!confirm('حذف هذه العهدة؟')) return;
@@ -1442,6 +1473,132 @@ function printIncome(){
     <div class="sigs"><div><div class="sl">توقيع المدير</div></div><div><div class="sl">توقيع المحاسب</div></div><div><div class="sl">ختم الشركة</div></div></div>`;
   window.print();
 }
+</script>
+
+<script>
+/* ══ PWA MANIFEST (inline) ══ */
+(function(){
+  const icons = [{
+    src: document.querySelector('img[alt="Free Lines"]')?.src || '',
+    sizes: '192x192', type: 'image/svg+xml'
+  }];
+  const manifest = {
+    name: 'النظام المالي والمحاسبي',
+    short_name: 'النظام المالي',
+    description: 'نظام إدارة العهد والمصروفات',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#130D2A',
+    theme_color: '#130D2A',
+    dir: 'rtl',
+    lang: 'ar',
+    icons: [
+      { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" fill="%23130D2A" rx="32"/><text x="96" y="120" font-size="100" text-anchor="middle">💼</text></svg>', sizes: '192x192', type: 'image/svg+xml' },
+      { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="%23130D2A" rx="80"/><text x="256" y="320" font-size="280" text-anchor="middle">💼</text></svg>', sizes: '512x512', type: 'image/svg+xml' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  document.getElementById('pwa-manifest').href = url;
+})();
+
+/* ══ SERVICE WORKER ══ */
+const SW_CODE = `
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => clients.claim());
+self.addEventListener('message', e => {
+  if(e.data && e.data.type === 'NOTIFY'){
+    self.registration.showNotification(e.data.title, {
+      body: e.data.body,
+      icon: e.data.icon || '',
+      badge: e.data.icon || '',
+      dir: 'rtl',
+      lang: 'ar',
+      vibrate: [200, 100, 200],
+      tag: 'custody-notify',
+      renotify: true
+    });
+  }
+});
+`;
+
+let swReg = null;
+if('serviceWorker' in navigator){
+  const blob = new Blob([SW_CODE], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, {scope: './'})
+    .then(reg => { swReg = reg; })
+    .catch(()=>{});
+}
+
+/* ══ PUSH NOTIFICATION ══ */
+function sendPushNotification(empName, amt, note){
+  const title = '💼 عهدة جديدة';
+  const body = `👤 ${empName}  |  💰 ${Number(amt).toLocaleString('ar-SA',{minimumFractionDigits:2})} ر.س` + (note ? `\n📝 ${note}` : '');
+  if(swReg && Notification.permission === 'granted'){
+    swReg.active?.postMessage({ type:'NOTIFY', title, body });
+  } else if(Notification.permission === 'granted'){
+    new Notification(title, { body, dir:'rtl' });
+  }
+}
+
+/* ══ REQUEST NOTIFICATION PERMISSION ══ */
+function requestNotifPerm(cb){
+  if(!('Notification' in window)){ if(cb) cb(false); return; }
+  if(Notification.permission === 'granted'){ if(cb) cb(true); return; }
+  Notification.requestPermission().then(p => { if(cb) cb(p === 'granted'); });
+}
+
+/* ══ INSTALL BANNER ══ */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner(){
+  if(document.getElementById('install-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'install-banner';
+  b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1e1340,#2a1060);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 -4px 20px rgba(0,0,0,.5);z-index:99999;font-family:Changa,sans-serif;direction:rtl;';
+  b.innerHTML = `
+    <div style="font-size:2rem;">📲</div>
+    <div style="flex:1;">
+      <div style="font-weight:700;font-size:.95rem;">ثبّت التطبيق على جوالك</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.7);">للوصول السريع وإشعارات العهد الفورية</div>
+    </div>
+    <button id="install-btn" style="background:var(--gold);color:#130D2A;border:none;padding:9px 18px;border-radius:10px;font-weight:700;cursor:pointer;font-family:Changa,sans-serif;font-size:.85rem;">تثبيت</button>
+    <button onclick="document.getElementById('install-banner').remove();" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;">✕</button>
+  `;
+  document.body.appendChild(b);
+  document.getElementById('install-btn').onclick = async () => {
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const {outcome} = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    b.remove();
+    if(outcome === 'accepted'){
+      setTimeout(()=> requestNotifPerm(), 1000);
+    }
+  };
+}
+
+/* ══ ASK NOTIF PERMISSION AFTER LOGIN ══ */
+const _origInit = typeof initApp === 'function' ? initApp : null;
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Patch login to request permission after success
+  const origLogin = window.doLogin;
+  if(origLogin){
+    window.doLogin = function(){
+      origLogin();
+      setTimeout(()=>{ requestNotifPerm(); }, 1500);
+    };
+  }
+});
+
+/* ══ HOOK INTO addCustody NOTIFICATION ══ */
+const _origShowWaBtn = window.showWaBtn;
 </script>
 </body>
 </html>
