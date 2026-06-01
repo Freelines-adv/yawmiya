@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>يومية الصندوق — مؤسسة منى للفعاليات الترفيهية</title>
+
+<!-- PWA Meta Tags -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="يومية الصندوق">
+<meta name="theme-color" content="#1B3A5C">
+<meta name="description" content="نظام يومية الصندوق — مؤسسة منى للفعاليات الترفيهية">
+<link rel="manifest" id="pwa-manifest">
+
+<!-- PWA Icons (inline SVG as data URI) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%231B3A5C'/%3E%3Ctext x='96' y='120' font-size='90' text-anchor='middle' fill='white' font-family='Arial'%3E💰%3C/text%3E%3C/svg%3E">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  background: #F0F4F8; color: #1a2233;
+  min-height: 100vh; direction: rtl;
+}
+.app-header {
+  background: linear-gradient(135deg, #1B3A5C 0%, #2E6DA4 100%);
+  color: #fff; padding: 16px 20px 12px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+.header-top { display: flex; align-items: center; gap: 12px; }
+.logo-box {
+  background: #fff; border-radius: 8px; padding: 5px 10px;
+  font-size: 12px; font-weight: 700; color: #1B3A5C;
+  letter-spacing: 1px; white-space: nowrap;
+}
+.header-title { flex: 1; }
+.header-title h1 { font-size: 16px; font-weight: 700; }
+.header-title p { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+.header-sub {
+  background: rgba(255,255,255,0.12); border-radius: 6px;
+  padding: 7px 12px; margin-top: 10px; font-size: 13px;
+  text-align: center; font-weight: 600;
+}
+.tabs {
+  display: flex; background: #fff;
+  border-bottom: 2px solid #E2E8F0;
+  position: sticky; top: 88px; z-index: 99;
+}
+.tab {
+  flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 600;
+  text-align: center; cursor: pointer; color: #666;
+  border-bottom: 3px solid transparent; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.tab.active { color: #1B3A5C; border-bottom-color: #1B3A5C; background: #F7FAFF; }
+.tab svg { width: 17px; height: 17px; }
+.page { display: none; padding: 14px; max-width: 720px; margin: 0 auto; }
+.page.active { display: block; }
+.card {
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  padding: 14px 16px; margin-bottom: 13px;
+}
+.card-title {
+  font-size: 14px; font-weight: 700; color: #1B3A5C;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 7px;
+  border-bottom: 1.5px solid #E8F0FB; padding-bottom: 9px;
+}
+.card-title svg { width: 17px; height: 17px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+label { font-size: 12px; color: #555; font-weight: 600; display: block; margin-bottom: 4px; }
+input[type=text], input[type=date], input[type=number], select {
+  width: 100%; border: 1.5px solid #D1DCE8; border-radius: 8px;
+  padding: 9px 11px; font-size: 13px; font-family: inherit;
+  color: #1a2233; background: #FAFCFF; direction: rtl;
+  transition: border-color 0.2s; -webkit-appearance: none;
+}
+input:focus, select:focus {
+  outline: none; border-color: #2E6DA4;
+  box-shadow: 0 0 0 3px rgba(46,109,164,0.12); background: #fff;
+}
+input[type=number] { text-align: left; direction: ltr; }
+input[readonly] { cursor: default; }
+
+/* Expense rows — each row is a mini-card */
+.exp-row {
+  background: #FAFCFF; border: 1.5px solid #E8F0FB;
+  border-radius: 10px; padding: 10px 12px;
+  margin-bottom: 8px; position: relative;
+}
+.exp-row-top {
+  display: grid;
+  grid-template-columns: 1fr 130px;
+  gap: 8px; margin-bottom: 8px;
+}
+.exp-row-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px; align-items: center;
+}
+.exp-row-bottom .vat-box {
+  background: #FEF9E7; border-radius: 8px;
+  padding: 7px 11px; display: flex; align-items: center;
+  justify-content: space-between;
+}
+.exp-row-bottom .vat-box label { font-size: 11px; color: #884400; margin: 0; }
+.exp-row-bottom .vat-box span { font-size: 15px; font-weight: 700; color: #884400; direction: ltr; }
+.remove-btn {
+  position: absolute; top: 8px; left: 10px;
+  background: none; border: none; color: #CCC;
+  cursor: pointer; font-size: 18px; line-height: 1;
+  padding: 2px 6px; border-radius: 6px;
+}
+.remove-btn:active { background: #FDF0F0; color: #E05252; }
+
+/* Income rows */
+.inc-row {
+  display: grid; grid-template-columns: 1fr 110px 32px;
+  gap: 7px; margin-bottom: 7px; align-items: center;
+}
+.inc-row input { font-size: 13px; }
+
+.col-header-inc {
+  display: grid; grid-template-columns: 1fr 110px 32px;
+  gap: 7px; margin-bottom: 5px;
+}
+.col-header-inc span {
+  font-size: 11px; font-weight: 700; color: #777;
+  text-align: center; padding: 0 4px;
+}
+.col-header-inc span:first-child { text-align: right; }
+
+.section-label {
+  font-size: 12px; font-weight: 700; padding: 7px 11px;
+  border-radius: 8px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.section-label.income { background: #EAF7F0; color: #0F6E56; }
+.section-label.expense { background: #FDF0F0; color: #993C1D; }
+
+.add-row-btn {
+  width: 100%; padding: 9px; border: 1.5px dashed #B0C8E0;
+  border-radius: 8px; background: transparent; color: #2E6DA4;
+  font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px;
+  font-family: inherit; display: flex; align-items: center;
+  justify-content: center; gap: 5px;
+}
+.add-row-btn:active { background: #EBF3FB; }
+
+.totals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.total-box { border-radius: 10px; padding: 11px 14px; text-align: center; }
+.total-box.income { background: #EAF7F0; }
+.total-box.expense { background: #FDF0F0; }
+.total-box.vat { background: #FEF9E7; }
+.total-box.balance { background: #EBF3FB; }
+.total-box label { font-size: 11px; color: #555; margin-bottom: 4px; }
+.total-box .amount { font-size: 19px; font-weight: 700; direction: ltr; }
+.total-box.income .amount { color: #0F6E56; }
+.total-box.expense .amount { color: #993C1D; }
+.total-box.vat .amount { color: #884400; }
+.total-box.balance .amount { color: #1B3A5C; }
+
+.balance-row {
+  background: #1B3A5C; border-radius: 10px; padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between; margin-top: 4px;
+}
+.balance-row label { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 600; margin: 0; }
+.balance-row .amount { font-size: 22px; font-weight: 700; color: #fff; direction: ltr; }
+
+.submit-btn {
+  width: 100%; padding: 15px; background: linear-gradient(135deg, #1B3A5C, #2E6DA4);
+  color: #fff; font-size: 16px; font-weight: 700; border: none;
+  border-radius: 12px; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 4px; box-shadow: 0 4px 14px rgba(27,58,92,0.25);
+}
+.submit-btn:active { opacity: 0.9; transform: scale(0.98); }
+
+.record-card {
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  padding: 13px 15px; margin-bottom: 11px;
+  border-right: 4px solid #2E6DA4;
+}
+.record-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 9px; }
+.record-project { font-size: 14px; font-weight: 700; color: #1B3A5C; }
+.record-client { font-size: 12px; color: #666; margin-top: 2px; }
+.record-date {
+  font-size: 12px; color: #888; background: #F0F4F8;
+  padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+}
+.record-amounts { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-top: 8px; }
+.rec-amount { text-align: center; padding: 7px 5px; border-radius: 8px; }
+.rec-amount.inc { background: #EAF7F0; }
+.rec-amount.exp { background: #FDF0F0; }
+.rec-amount.bal { background: #EBF3FB; }
+.rec-amount label { font-size: 10px; color: #666; display: block; margin-bottom: 2px; }
+.rec-amount .val { font-size: 13px; font-weight: 700; direction: ltr; }
+.rec-amount.inc .val { color: #0F6E56; }
+.rec-amount.exp .val { color: #993C1D; }
+.rec-amount.bal .val { color: #1B3A5C; }
+.delete-record { background: none; border: none; color: #CCC; cursor: pointer; padding: 4px; font-size: 18px; }
+.delete-record:active { color: #E05252; }
+.empty-state { text-align: center; padding: 50px 20px; color: #999; }
+.empty-state svg { width: 44px; height: 44px; opacity: 0.3; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+.dash-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.kpi { background: #fff; border-radius: 12px; padding: 13px; text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+.kpi .k-label { font-size: 11px; color: #777; font-weight: 600; margin-bottom: 5px; }
+.kpi .k-val { font-size: 19px; font-weight: 700; direction: ltr; }
+.kpi.k-inc .k-val { color: #0F6E56; }
+.kpi.k-exp .k-val { color: #993C1D; }
+.kpi.k-vat .k-val { color: #884400; }
+.kpi.k-bal .k-val { color: #1B3A5C; }
+.kpi.k-cnt .k-val { color: #1B3A5C; font-size: 28px; }
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1B3A5C; color: #fff; padding: 12px 24px;
+  border-radius: 30px; font-size: 14px; font-weight: 600;
+  z-index: 9999; transition: transform 0.3s; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.filter-bar { display: flex; gap: 8px; margin-bottom: 13px; }
+.filter-bar input { flex: 1; font-size: 13px; padding: 9px 12px; }
+.sep { height: 1px; background: #EEF2F7; margin: 10px 0; }
+.detail-toggle {
+  font-size: 12px; color: #2E6DA4; cursor: pointer;
+  margin-top: 8px; display: flex; align-items: center; gap: 4px;
+  font-weight: 600; background: none; border: none; font-family: inherit; padding: 0;
+}
+.detail-body { display: none; margin-top: 10px; }
+.detail-body.open { display: block; }
+.detail-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.detail-table th { background: #F0F4F8; padding: 6px 8px; font-weight: 700; text-align: right; color: #444; }
+.detail-table td { padding: 5px 8px; border-bottom: 1px solid #F0F4F8; color: #333; }
+.detail-table td.num { text-align: left; direction: ltr; font-weight: 600; }
+@media (min-width:580px) {
+  .info-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .exp-row-bottom { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* ── Print Button ────────────────────────────────────────────────── */
+.print-btn {
+  background: #F0F4F8; border: 1.5px solid #D1DCE8;
+  border-radius: 8px; padding: 7px 12px; font-size: 12px;
+  font-weight: 600; color: #1B3A5C; cursor: pointer;
+  font-family: inherit; display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.print-btn:active { background: #E2EAF4; }
+
+/* ── Print Styles ────────────────────────────────────────────────── */
+@media print {
+  body * { visibility: hidden !important; }
+  #print-area, #print-area * { visibility: visible !important; }
+  #print-area {
+    position: fixed !important; inset: 0 !important;
+    background: #fff !important; padding: 20px !important;
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif !important;
+    direction: rtl !important;
+  }
+}
+
+/* ── PWA Install Banner ─────────────────────────────────────────── */
+.pwa-banner {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 10000;
+  background: #1B3A5C; color: #fff;
+  padding: 14px 16px; flex-direction: row;
+  align-items: center; gap: 12px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+  animation: slideUp 0.4s ease;
+}
+.pwa-banner.show { display: flex; }
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.pwa-banner-icon {
+  width: 48px; height: 48px; background: rgba(255,255,255,0.15);
+  border-radius: 12px; display: flex; align-items: center;
+  justify-content: center; font-size: 24px; flex-shrink: 0;
+}
+.pwa-banner-text { flex: 1; }
+.pwa-banner-text strong { display: block; font-size: 14px; font-weight: 700; }
+.pwa-banner-text span { font-size: 11px; opacity: 0.75; }
+.pwa-install-btn {
+  background: #fff; color: #1B3A5C; border: none;
+  padding: 9px 16px; border-radius: 10px; font-size: 13px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+  white-space: nowrap; flex-shrink: 0;
+}
+.pwa-install-btn:active { opacity: 0.85; }
+.pwa-dismiss-btn {
+  background: none; border: none; color: rgba(255,255,255,0.5);
+  font-size: 20px; cursor: pointer; padding: 4px; flex-shrink: 0;
+}
+
+/* ── Lock Overlay ──────────────────────────────────────────────── */
+.lock-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(160deg, #0d2137 0%, #1B3A5C 60%, #22527a 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px;
+}
+.lock-overlay.hidden { display: none; }
+
+.lock-logo {
+  background: rgba(255,255,255,0.12); border-radius: 14px;
+  padding: 8px 20px; font-size: 13px; font-weight: 800;
+  color: #fff; letter-spacing: 2px; margin-bottom: 10px;
+}
+.lock-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 4px; text-align: center; }
+.lock-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 32px; text-align: center; }
+
+.lock-icon {
+  width: 64px; height: 64px; background: rgba(255,255,255,0.1);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+}
+.lock-icon svg { width: 30px; height: 30px; stroke: rgba(255,255,255,0.8); }
+
+.pin-label { font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 600; margin-bottom: 10px; }
+.pin-dots { display: flex; gap: 12px; margin-bottom: 24px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.4);
+  background: transparent; transition: all 0.2s;
+}
+.pin-dot.filled { background: #fff; border-color: #fff; }
+
+.pin-pad {
+  display: grid; grid-template-columns: repeat(3, 72px);
+  gap: 10px; margin-bottom: 20px;
+}
+.pin-key {
+  height: 64px; background: rgba(255,255,255,0.1);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 14px; color: #fff; font-size: 20px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+}
+.pin-key:active, .pin-key.pressed { background: rgba(255,255,255,0.25); transform: scale(0.93); }
+.pin-key.del { font-size: 16px; }
+.pin-key.empty { visibility: hidden; }
+
+.pin-error {
+  font-size: 13px; color: #ff8080; font-weight: 600;
+  min-height: 18px; margin-bottom: 10px;
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.lock-bypass {
+  margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.4);
+  cursor: pointer; text-decoration: underline; background: none; border: none;
+  font-family: inherit; padding: 8px;
+}
+.lock-bypass:active { color: rgba(255,255,255,0.7); }
+
+/* ── Admin Badge & Logout ── */
+.admin-bar {
+  background: #1B3A5C;
+  padding: 6px 16px; text-align: center;
+  font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.admin-bar.hidden { display: none !important; }
+.admin-bar span { display: flex; align-items: center; gap: 5px; }
+.admin-bar svg { width: 14px; height: 14px; }
+.logout-btn {
+  background: rgba(255,255,255,0.15); border: none; color: #fff;
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  cursor: pointer; font-family: inherit;
+}
+.logout-btn:active { background: rgba(255,255,255,0.3); }
+
+/* ── Locked tabs (team can't click them) ── */
+.tab.locked { opacity: 0.35; pointer-events: none; position: relative; }
+.tab.locked::after {
+  content: '🔒'; font-size: 10px; position: absolute;
+  top: 6px; left: 50%; transform: translateX(-50%);
+}
+</style>
+</head>
+<body>
+
+<!-- ── PWA Install Banner ───────────────────────────────────── -->
+<div class="pwa-banner" id="pwaBanner">
+  <div class="pwa-banner-icon">💰</div>
+  <div class="pwa-banner-text">
+    <strong>ثبّت التطبيق</strong>
+    <span>أضفه للشاشة الرئيسية وافتحه زي أي تطبيق</span>
+  </div>
+  <button class="pwa-install-btn" id="pwaInstallBtn">تثبيت</button>
+  <button class="pwa-dismiss-btn" id="pwaDismissBtn">×</button>
+</div>
+
+<!-- ── PIN Lock Overlay ─────────────────────────────────────── -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-logo">FREE LINE</div>
+  <div class="lock-title">مؤسسة منى للفعاليات الترفيهية</div>
+  <div class="lock-sub">يومية الصندوق — قسم المنجرة</div>
+  <div class="lock-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="5" y="11" width="14" height="11" rx="2"/>
+      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+    </svg>
+  </div>
+  <div class="pin-label">أدخل رمز المدير للوصول الكامل</div>
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinPress('1')">1</button>
+    <button class="pin-key" onclick="pinPress('2')">2</button>
+    <button class="pin-key" onclick="pinPress('3')">3</button>
+    <button class="pin-key" onclick="pinPress('4')">4</button>
+    <button class="pin-key" onclick="pinPress('5')">5</button>
+    <button class="pin-key" onclick="pinPress('6')">6</button>
+    <button class="pin-key" onclick="pinPress('7')">7</button>
+    <button class="pin-key" onclick="pinPress('8')">8</button>
+    <button class="pin-key" onclick="pinPress('9')">9</button>
+    <button class="pin-key empty"></button>
+    <button class="pin-key" onclick="pinPress('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+  <button class="lock-bypass" onclick="enterAsTeam()">دخول كعضو فريق (تسجيل فقط)</button>
+</div>
+
+<div class="app-header">
+  <div class="header-top">
+    <div class="logo-box">FREE LINE</div>
+    <div class="header-title">
+      <h1>مؤسسة منى للفعاليات الترفيهية</h1>
+      <p>اليومية العامة للصندوق — قسم المنجرة</p>
+    </div>
+  </div>
+  <div class="header-sub">نظام تسجيل اليومية الإلكتروني</div>
+</div>
+
+<!-- ── Admin Bar ─────────────────────────────────────────────── -->
+<div class="admin-bar hidden" id="adminBar">
+  <span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    وضع المدير — صلاحيات كاملة
+  </span>
+  <button class="logout-btn" onclick="doLogout()">خروج 🔒</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPage('entry',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    تسجيل جديد
+  </div>
+  <div class="tab" onclick="showPage('records',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    السجلات
+  </div>
+  <div class="tab" onclick="showPage('dashboard',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    الداشبورد
+  </div>
+</div>
+
+<!-- ENTRY PAGE -->
+<div class="page active" id="page-entry">
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      بيانات المشروع
+    </div>
+    <div class="info-grid">
+      <div>
+        <label>اسم العميل</label>
+        <input type="text" id="clientName" placeholder="اسم العميل">
+      </div>
+      <div>
+        <label>اسم المشروع</label>
+        <input type="text" id="projectName" placeholder="اسم المشروع">
+      </div>
+      <div>
+        <label>رقم المشروع</label>
+        <input type="text" id="projectNum" placeholder="رقم المشروع">
+      </div>
+      <div>
+        <label>تاريخ اليومية</label>
+        <input type="date" id="entryDate">
+      </div>
+      <div>
+        <label>رصيد اليوم السابق (ريال)</label>
+        <input type="number" id="prevBalance" placeholder="0.00" step="0.01" min="0" oninput="calcTotals()">
+      </div>
+    </div>
+  </div>
+
+  <!-- INCOME -->
+  <div class="card">
+    <div class="card-title" style="color:#0F6E56;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      المقبوضات (الإيرادات)
+    </div>
+    <div class="section-label income">أدخل إيرادات اليوم</div>
+    <div class="col-header-inc">
+      <span>البيان</span>
+      <span>المبلغ (ريال)</span>
+      <span></span>
+    </div>
+    <div id="income-rows"></div>
+    <button class="add-row-btn" onclick="addIncomeRow()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      إضافة سطر
+    </button>
+  </div>
+
+  <!-- EXPENSE -->
+  <div class="card">
+    <div class="card-title" style="color:#993C1D;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+      المدفوعات (المصروفات)
+    </div>
+    <div class="section-label expense">أدخل مصروفات اليوم — الضريبة تُحسب تلقائياً</div>
+    <div id="expense-rows"></div>
+    <button class="add-row-btn" onclick="addExpenseRow()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      إضافة سطر مصروف
+    </button>
+  </div>
+
+  <!-- TOTALS -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
+      ملخص اليومية
+    </div>
+    <div class="totals-grid">
+      <div class="total-box income"><label>مجموع المقبوضات</label><div class="amount" id="t-income">0.00</div></div>
+      <div class="total-box expense"><label>مجموع المدفوعات</label><div class="amount" id="t-expense">0.00</div></div>
+    </div>
+    <div class="totals-grid">
+      <div class="total-box vat"><label>إجمالي الضريبة (VAT)</label><div class="amount" id="t-vat">0.00</div></div>
+      <div class="total-box expense"><label>المبلغ بدون ضريبة</label><div class="amount" id="t-noVat">0.00</div></div>
+    </div>
+    <div class="totals-grid">
+      <div class="total-box balance"><label>مقبوضات + رصيد سابق</label><div class="amount" id="t-totalIn">0.00</div></div>
+      <div class="total-box expense"><label>إجمالي المصروفات</label><div class="amount" id="t-totalExp">0.00</div></div>
+    </div>
+    <div class="balance-row">
+      <label>الرصيد الصافي نهاية اليوم</label>
+      <span class="amount" id="t-net">0.00</span>
+    </div>
+  </div>
+
+  <button class="submit-btn" onclick="saveRecord()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
+    حفظ اليومية
+  </button>
+  <div style="height:30px"></div>
+</div>
+
+<!-- RECORDS PAGE -->
+<div class="page" id="page-records">
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="بحث بالاسم أو المشروع..." oninput="renderRecords()">
+    <input type="date" id="filterDate" oninput="renderRecords()" style="max-width:148px;">
+  </div>
+  <div id="records-list"></div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div class="page" id="page-dashboard">
+  <div class="dash-kpi">
+    <div class="kpi k-cnt"><div class="k-label">عدد السجلات</div><div class="k-val" id="d-count">0</div></div>
+    <div class="kpi k-bal"><div class="k-label">صافي الرصيد الكلي</div><div class="k-val" id="d-net">0.00</div></div>
+    <div class="kpi k-inc"><div class="k-label">إجمالي المقبوضات</div><div class="k-val" id="d-inc">0.00</div></div>
+    <div class="kpi k-exp"><div class="k-label">إجمالي المصروفات</div><div class="k-val" id="d-exp">0.00</div></div>
+    <div class="kpi k-vat" style="grid-column:1/-1"><div class="k-label">إجمالي VAT المدفوعة</div><div class="k-val" id="d-vat">0.00</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      آخر 5 سجلات
+    </div>
+    <div id="dash-recent"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      تصدير البيانات
+    </div>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">تنزيل جميع السجلات بصيغة CSV لربطها بملف الإكسل</p>
+    <button class="submit-btn" onclick="exportCSV()" style="background:linear-gradient(135deg,#0F6E56,#1D9E75);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      تنزيل CSV
+    </button>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Hidden print area -->
+<div id="print-area" style="display:none;"></div>
+
+<script>
+const STORAGE_KEY = 'mona_daily_v3';
+
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function saveRecords(arr) { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function getNum(el) { return parseFloat(el ? el.value : 0) || 0; }
+function fmt(n) {
+  return (isNaN(n) ? 0 : n).toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ── Income rows ──────────────────────────────────────────────────────
+function addIncomeRow() {
+  const container = document.getElementById('income-rows');
+  const id = 'inc-' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'inc-row'; div.id = id;
+  div.innerHTML = `
+    <input type="text" placeholder="البيان" class="inc-desc">
+    <input type="number" placeholder="0.00" step="0.01" min="0" class="inc-amount" oninput="calcTotals()">
+    <button class="remove-btn" onclick="removeRow('${id}')">×</button>`;
+  container.appendChild(div);
+}
+
+// ── Expense rows ─────────────────────────────────────────────────────
+function addExpenseRow() {
+  const container = document.getElementById('expense-rows');
+  const id = 'exp-' + Date.now();
+  const today = new Date().toISOString().slice(0, 10);
+  const div = document.createElement('div');
+  div.className = 'exp-row'; div.id = id;
+  div.innerHTML = `
+    <button class="remove-btn" onclick="removeRow('${id}')">×</button>
+    <div class="exp-row-top">
+      <div>
+        <label>البيان</label>
+        <input type="text" placeholder="وصف المصروف" class="exp-desc">
+      </div>
+      <div>
+        <label>التاريخ</label>
+        <input type="date" class="exp-date" value="${today}">
+      </div>
+    </div>
+    <div class="exp-row-bottom">
+      <div>
+        <label>المبلغ الإجمالي (ريال)</label>
+        <input type="number" placeholder="0.00" step="0.01" min="0" class="exp-amount" oninput="onAmtChange(this)">
+      </div>
+      <div class="vat-box">
+        <label>VAT (ريال)</label>
+        <input type="number" placeholder="0.00" step="0.01" min="0" class="exp-vat vat-editable" oninput="calcTotals()" style="width:100%;margin-top:4px;">
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+
+function onAmtChange(input) {
+  const amt = parseFloat(input.value) || 0;
+  const vat = +(amt * 15 / 115).toFixed(2);
+  const row = input.closest('.exp-row');
+  const vatInput = row.querySelector('.exp-vat');
+  vatInput.value = vat || '';
+  calcTotals();
+}
+
+function removeRow(id) {
+  const el = document.getElementById(id);
+  if (el) { el.remove(); calcTotals(); }
+}
+
+// ── Totals ───────────────────────────────────────────────────────────
+function calcTotals() {
+  let totalIncome = 0, totalExpense = 0, totalVat = 0;
+  document.querySelectorAll('.inc-amount').forEach(el => totalIncome += getNum(el));
+  document.querySelectorAll('.exp-amount').forEach(el => totalExpense += getNum(el));
+  document.querySelectorAll('.exp-vat').forEach(el => totalVat += getNum(el));
+
+  const prev = getNum(document.getElementById('prevBalance'));
+  const noVat = totalExpense - totalVat;
+  const totalIn = totalIncome + prev;
+  const net = totalIn - totalExpense;
+
+  document.getElementById('t-income').textContent = fmt(totalIncome);
+  document.getElementById('t-expense').textContent = fmt(totalExpense);
+  document.getElementById('t-vat').textContent = fmt(totalVat);
+  document.getElementById('t-noVat').textContent = fmt(noVat);
+  document.getElementById('t-totalIn').textContent = fmt(totalIn);
+  document.getElementById('t-totalExp').textContent = fmt(totalExpense);
+  document.getElementById('t-net').textContent = fmt(net);
+}
+
+// ── Google Sheets Sync ───────────────────────────────────────────────
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxopFoWWCgpviBBz5lC1WziVKyW6z3K5VdmynyPPmVKQ6ttuDKnHofCHoEe-D0giKhT/exec';
+
+function syncToSheet(record) {
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(record)
+  }).catch(function() {});
+}
+
+// ── Save ─────────────────────────────────────────────────────────────
+function saveRecord() {
+  const client = document.getElementById('clientName').value.trim();
+  const project = document.getElementById('projectName').value.trim();
+  const projNum = document.getElementById('projectNum').value.trim();
+  const date = document.getElementById('entryDate').value;
+  if (!client || !project || !date) { showToast('يرجى إدخال اسم العميل والمشروع والتاريخ'); return; }
+
+  const incomeItems = [], expenseItems = [];
+  document.querySelectorAll('#income-rows .inc-row').forEach(row => {
+    const desc = row.querySelector('.inc-desc').value.trim();
+    const amt = getNum(row.querySelector('.inc-amount'));
+    if (desc || amt) incomeItems.push({ desc, amount: amt });
+  });
+  document.querySelectorAll('#expense-rows .exp-row').forEach(row => {
+    const desc = row.querySelector('.exp-desc').value.trim();
+    const dt   = row.querySelector('.exp-date').value;
+    const amt  = getNum(row.querySelector('.exp-amount'));
+    const vat  = getNum(row.querySelector('.exp-vat'));
+    if (desc || amt) expenseItems.push({ desc, date: dt, amount: amt, vat });
+  });
+
+  const totalIncome  = incomeItems.reduce((s, r) => s + r.amount, 0);
+  const totalExpense = expenseItems.reduce((s, r) => s + r.amount, 0);
+  const totalVat     = expenseItems.reduce((s, r) => s + r.vat, 0);
+  const prev = getNum(document.getElementById('prevBalance'));
+
+  const record = {
+    id: Date.now(), client, project, projNum, date,
+    prevBalance: prev, incomeItems, expenseItems,
+    totalIncome, totalExpense, totalVat,
+    noVat: totalExpense - totalVat,
+    totalIn: totalIncome + prev,
+    net: (totalIncome + prev) - totalExpense,
+    createdAt: new Date().toISOString()
+  };
+
+  const records = getRecords(); records.unshift(record); saveRecords(records);
+  syncToSheet(record);
+  resetForm();
+  showToast('✓ تم الحفظ ومزامنة Google Sheets');
+  updateDashboard();
+}
+
+function resetForm() {
+  ['clientName','projectName','projectNum','entryDate','prevBalance'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('income-rows').innerHTML = '';
+  document.getElementById('expense-rows').innerHTML = '';
+  document.getElementById('entryDate').value = new Date().toISOString().slice(0,10);
+  addIncomeRow(); addIncomeRow(); addIncomeRow();
+  addExpenseRow(); addExpenseRow();
+  calcTotals();
+}
+
+// ── Records ──────────────────────────────────────────────────────────
+function renderRecords() {
+  const container = document.getElementById('records-list');
+  let records = getRecords();
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const fd = document.getElementById('filterDate').value;
+  if (search) records = records.filter(r =>
+    r.client.toLowerCase().includes(search) ||
+    r.project.toLowerCase().includes(search) ||
+    (r.projNum||'').toLowerCase().includes(search));
+  if (fd) records = records.filter(r => r.date === fd);
+
+  if (!records.length) {
+    container.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <p>لا توجد سجلات</p></div>`;
+    return;
+  }
+  container.innerHTML = records.map(r => `
+    <div class="record-card">
+      <div class="record-header">
+        <div>
+          <div class="record-project">${r.project}</div>
+          <div class="record-client">${r.client}${r.projNum?' · '+r.projNum:''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="record-date">${r.date}</span>
+          <button class="delete-record" onclick="deleteRecord(${r.id})">×</button>
+        </div>
+      </div>
+      <div class="record-amounts">
+        <div class="rec-amount inc"><label>المقبوضات</label><div class="val">${fmt(r.totalIncome)}</div></div>
+        <div class="rec-amount exp"><label>المصروفات</label><div class="val">${fmt(r.totalExpense)}</div></div>
+        <div class="rec-amount bal"><label>الرصيد الصافي</label><div class="val">${fmt(r.net)}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="detail-toggle" onclick="toggleDetail(this)" style="flex:1;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          عرض التفاصيل
+        </button>
+        <button class="print-btn" onclick="printRecord(${r.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><rect x="6" y="17" width="12" height="5" rx="1"/><path d="M6 13H4a1 1 0 0 0-1 1v4h3"/><path d="M18 13h2a1 1 0 0 1 1 1v4h-3"/><path d="M18 9H6a2 2 0 0 0-2 2v4h16v-4a2 2 0 0 0-2-2z"/></svg>
+          طباعة / PDF
+        </button>
+      </div>
+      <div class="detail-body">
+        ${r.incomeItems.length ? `
+          <p style="font-size:12px;font-weight:700;color:#0F6E56;margin:8px 0 4px">المقبوضات</p>
+          <table class="detail-table">
+            <tr><th>البيان</th><th style="text-align:left">المبلغ</th></tr>
+            ${r.incomeItems.map(i=>`<tr><td>${i.desc||'—'}</td><td class="num">${fmt(i.amount)}</td></tr>`).join('')}
+          </table>` : ''}
+        ${r.expenseItems.length ? `
+          <p style="font-size:12px;font-weight:700;color:#993C1D;margin:10px 0 4px">المدفوعات</p>
+          <table class="detail-table">
+            <tr><th>البيان</th><th>التاريخ</th><th style="text-align:left">المبلغ</th><th style="text-align:left">VAT</th></tr>
+            ${r.expenseItems.map(i=>`<tr>
+              <td>${i.desc||'—'}</td>
+              <td style="font-size:11px;color:#888">${i.date||'—'}</td>
+              <td class="num">${fmt(i.amount)}</td>
+              <td class="num" style="color:#884400">${fmt(i.vat)}</td>
+            </tr>`).join('')}
+          </table>` : ''}
+        <div class="sep"></div>
+        <div style="font-size:12px;color:#555;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+          <span>رصيد سابق: <b>${fmt(r.prevBalance)}</b></span>
+          <span>VAT الكلي: <b style="color:#884400">${fmt(r.totalVat)}</b></span>
+          <span>بدون ضريبة: <b>${fmt(r.noVat)}</b></span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleDetail(btn) {
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+  btn.querySelector('svg').style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+function deleteRecord(id) {
+  if (!confirm('هل تريد حذف هذا السجل؟')) return;
+  saveRecords(getRecords().filter(r => r.id !== id));
+  renderRecords(); updateDashboard();
+  showToast('تم حذف السجل');
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────
+function updateDashboard() {
+  const records = getRecords();
+  const totInc = records.reduce((s,r) => s+r.totalIncome, 0);
+  const totExp = records.reduce((s,r) => s+r.totalExpense, 0);
+  const totVat = records.reduce((s,r) => s+r.totalVat, 0);
+  const totNet = records.reduce((s,r) => s+r.net, 0);
+  document.getElementById('d-count').textContent = records.length;
+  document.getElementById('d-inc').textContent = fmt(totInc);
+  document.getElementById('d-exp').textContent = fmt(totExp);
+  document.getElementById('d-vat').textContent = fmt(totVat);
+  document.getElementById('d-net').textContent = fmt(totNet);
+
+  const recent = records.slice(0,5);
+  const el = document.getElementById('dash-recent');
+  if (!recent.length) { el.innerHTML = '<p style="font-size:13px;color:#999;text-align:center;padding:16px">لا توجد سجلات بعد</p>'; return; }
+  el.innerHTML = recent.map(r => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F0F4F8;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#1B3A5C">${r.project}</div>
+        <div style="font-size:11px;color:#888">${r.client} · ${r.date}</div>
+      </div>
+      <div style="text-align:left;direction:ltr">
+        <div style="font-size:14px;font-weight:700;color:${r.net>=0?'#0F6E56':'#993C1D'}">${fmt(r.net)}</div>
+        <div style="font-size:10px;color:#888">رصيد صافي</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Export CSV ───────────────────────────────────────────────────────
+function exportCSV() {
+  const records = getRecords();
+  if (!records.length) { showToast('لا توجد بيانات للتصدير'); return; }
+  const headers = ['التاريخ','اسم العميل','اسم المشروع','رقم المشروع','رصيد سابق','إجمالي المقبوضات','إجمالي المدفوعات','VAT','بدون ضريبة','الرصيد الصافي'];
+  const rows = records.map(r => [r.date,r.client,r.project,r.projNum||'',r.prevBalance,r.totalIncome,r.totalExpense,r.totalVat,r.noVat,r.net].join(','));
+  const csv = '\uFEFF' + [headers.join(','),...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = 'يومية_الصندوق_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('✓ تم تنزيل الملف');
+}
+
+// ── Nav ──────────────────────────────────────────────────────────────
+function showPage(name, tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (tab) tab.classList.add('active');
+  if (name === 'records') renderRecords();
+  if (name === 'dashboard') updateDashboard();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+document.getElementById('entryDate').value = new Date().toISOString().slice(0,10);
+addIncomeRow(); addIncomeRow(); addIncomeRow();
+addExpenseRow(); addExpenseRow();
+calcTotals();
+updateDashboard();
+
+// ── PWA Setup ────────────────────────────────────────────────────────
+// Inject manifest dynamically
+const manifest = {
+  name: 'يومية الصندوق — مؤسسة منى',
+  short_name: 'يومية الصندوق',
+  description: 'نظام تسجيل اليومية الإلكتروني',
+  start_url: window.location.href,
+  display: 'standalone',
+  orientation: 'portrait',
+  background_color: '#1B3A5C',
+  theme_color: '#1B3A5C',
+  lang: 'ar',
+  dir: 'rtl',
+  icons: [
+    {
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%231B3A5C'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%92%B0%3C/text%3E%3C/svg%3E",
+      sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable'
+    },
+    {
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%231B3A5C'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%92%B0%3C/text%3E%3C/svg%3E",
+      sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable'
+    }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
+
+// Service Worker for offline support
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'yawmiya-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).catch(() => r))
+      );
+    });
+  `;
+  const swBlob = new Blob([swCode], {type: 'application/javascript'});
+  const swURL = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swURL).catch(function(){});
+}
+
+// Install banner logic
+let deferredPrompt = null;
+const banner = document.getElementById('pwaBanner');
+const installBtn = document.getElementById('pwaInstallBtn');
+const dismissBtn = document.getElementById('pwaDismissBtn');
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show banner after 2 seconds
+  setTimeout(function() {
+    if (!localStorage.getItem('pwa_dismissed')) {
+      banner.classList.add('show');
+    }
+  }, 2000);
+});
+
+installBtn.addEventListener('click', function() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(result) {
+      if (result.outcome === 'accepted') {
+        banner.classList.remove('show');
+        showToast('✓ تم تثبيت التطبيق بنجاح!');
+      }
+      deferredPrompt = null;
+    });
+  } else {
+    // iOS fallback
+    showToast('افتح قائمة المتصفح ← اضغط "إضافة إلى الشاشة الرئيسية"');
+    banner.classList.remove('show');
+  }
+});
+
+dismissBtn.addEventListener('click', function() {
+  banner.classList.remove('show');
+  localStorage.setItem('pwa_dismissed', '1');
+});
+
+// iOS: show manual instructions if not installed
+const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isInStandalone = window.navigator.standalone;
+if (isIOS && !isInStandalone && !localStorage.getItem('pwa_dismissed')) {
+  setTimeout(function() {
+    banner.classList.add('show');
+    document.querySelector('.pwa-banner-text span').textContent =
+      'اضغط  ثم "إضافة إلى الشاشة الرئيسية"';
+    installBtn.style.display = 'none';
+  }, 2000);
+}
+
+// ── Print / PDF ──────────────────────────────────────────────────────
+function printRecord(id) {
+  const records = getRecords();
+  const r = records.find(rec => rec.id === id);
+  if (!r) return;
+
+  const incRows = r.incomeItems.map(i => `
+    <tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;">${i.desc || '—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:left;direction:ltr;font-weight:600;color:#0F6E56;">${fmt(i.amount)}</td>
+    </tr>`).join('');
+
+  const expRows = r.expenseItems.map(i => `
+    <tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;">${i.desc || '—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;font-size:12px;color:#888;">${i.date || '—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:left;direction:ltr;font-weight:600;color:#993C1D;">${fmt(i.amount)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:left;direction:ltr;color:#884400;">${fmt(i.vat)}</td>
+    </tr>`).join('');
+
+  const html = `
+    <div style="max-width:700px;margin:0 auto;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;color:#1a2233;">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1B3A5C,#2E6DA4);color:#fff;padding:20px 24px;border-radius:10px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px;">FREE LINE</div>
+            <div style="font-size:18px;font-weight:700;">مؤسسة منى للفعاليات الترفيهية</div>
+            <div style="font-size:12px;opacity:0.8;margin-top:2px;">اليومية العامة للصندوق — قسم المنجرة</div>
+          </div>
+          <div style="text-align:left;background:rgba(255,255,255,0.15);padding:10px 16px;border-radius:8px;">
+            <div style="font-size:11px;opacity:0.7;">رقم المشروع</div>
+            <div style="font-size:16px;font-weight:700;">${r.projNum || '—'}</div>
+            <div style="font-size:11px;opacity:0.7;margin-top:4px;">${r.date}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Info -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:#F7FAFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:#888;margin-bottom:3px;">اسم العميل</div>
+          <div style="font-size:15px;font-weight:700;">${r.client}</div>
+        </div>
+        <div style="background:#F7FAFF;border:1px solid #E2E8F0;border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:#888;margin-bottom:3px;">اسم المشروع</div>
+          <div style="font-size:15px;font-weight:700;">${r.project}</div>
+        </div>
+      </div>
+
+      <!-- Income Table -->
+      ${r.incomeItems.length ? `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#0F6E56;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          ▲ المقبوضات (الإيرادات)
+        </div>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <thead>
+            <tr style="background:#EAF7F0;">
+              <th style="padding:8px 10px;text-align:right;font-size:12px;color:#0F6E56;">البيان</th>
+              <th style="padding:8px 10px;text-align:left;font-size:12px;color:#0F6E56;">المبلغ (ريال)</th>
+            </tr>
+          </thead>
+          <tbody>${incRows}</tbody>
+        </table>
+      </div>` : ''}
+
+      <!-- Expense Table -->
+      ${r.expenseItems.length ? `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#993C1D;margin-bottom:8px;">
+          ▼ المدفوعات (المصروفات)
+        </div>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <thead>
+            <tr style="background:#FDF0F0;">
+              <th style="padding:8px 10px;text-align:right;font-size:12px;color:#993C1D;">البيان</th>
+              <th style="padding:8px 10px;text-align:right;font-size:12px;color:#993C1D;">التاريخ</th>
+              <th style="padding:8px 10px;text-align:left;font-size:12px;color:#993C1D;">المبلغ (ريال)</th>
+              <th style="padding:8px 10px;text-align:left;font-size:12px;color:#884400;">الضريبة</th>
+            </tr>
+          </thead>
+          <tbody>${expRows}</tbody>
+        </table>
+      </div>` : ''}
+
+      <!-- Summary Box -->
+      <div style="background:#1B3A5C;color:#fff;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px;">
+          <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px;">رصيد سابق</div>
+            <div style="font-size:16px;font-weight:700;direction:ltr;">${fmt(r.prevBalance)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px;">إجمالي المقبوضات</div>
+            <div style="font-size:16px;font-weight:700;direction:ltr;color:#7EEDC8;">${fmt(r.totalIncome)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px;">إجمالي المدفوعات</div>
+            <div style="font-size:16px;font-weight:700;direction:ltr;color:#FFAAAA;">${fmt(r.totalExpense)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px;">إجمالي الضريبة (VAT)</div>
+            <div style="font-size:16px;font-weight:700;direction:ltr;color:#FFD580;">${fmt(r.totalVat)}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.15);border-radius:8px;padding:12px 16px;">
+          <span style="font-size:14px;font-weight:600;">الرصيد الصافي نهاية اليوم</span>
+          <span style="font-size:22px;font-weight:700;direction:ltr;">${fmt(r.net)} ريال</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="border-top:1px solid #E2E8F0;padding-top:12px;display:flex;justify-content:space-between;font-size:11px;color:#999;">
+        <span>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</span>
+        <span>مؤسسة منى للفعاليات الترفيهية — FREE LINE</span>
+      </div>
+    </div>`;
+
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = html;
+  printArea.style.display = 'block';
+  window.print();
+  printArea.style.display = 'none';
+}
+
+// ── PIN & Access Control ──────────────────────────────────────────────
+const ADMIN_PIN = '1234'; // ← غيّر الرقم السري من هنا
+let pinBuffer = '';
+let isAdmin = false;
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  // visual feedback
+  const btn = event.currentTarget;
+  btn.classList.add('pressed');
+  setTimeout(() => btn.classList.remove('pressed'), 150);
+
+  pinBuffer += digit;
+  updateDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(checkPin, 200);
+  }
+}
+
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updateDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function checkPin() {
+  if (pinBuffer === ADMIN_PIN) {
+    isAdmin = true;
+    document.getElementById('lockOverlay').classList.add('hidden');
+    document.getElementById('adminBar').classList.remove('hidden');
+    unlockAdminTabs();
+    showToast('✓ مرحباً بك — وضع المدير');
+  } else {
+    document.getElementById('pinError').textContent = 'رمز خاطئ، حاول مجدداً';
+    // shake dots
+    const dots = document.getElementById('pinDots');
+    dots.style.animation = 'none';
+    dots.offsetHeight; // reflow
+    dots.style.animation = 'shake 0.3s ease';
+    pinBuffer = '';
+    updateDots();
+  }
+}
+
+function enterAsTeam() {
+  isAdmin = false;
+  document.getElementById('lockOverlay').classList.add('hidden');
+  document.getElementById('adminBar').classList.add('hidden');
+  lockAdminTabs();
+  // Force to entry page only
+  showPage('entry', document.querySelector('.tab'));
+  showToast('دخول كعضو فريق — تسجيل المصروفات فقط');
+}
+
+function lockAdminTabs() {
+  const tabs = document.querySelectorAll('.tab');
+  tabs[1]?.classList.add('locked'); // السجلات
+  tabs[2]?.classList.add('locked'); // الداشبورد
+}
+
+function unlockAdminTabs() {
+  document.querySelectorAll('.tab.locked').forEach(t => t.classList.remove('locked'));
+}
+
+function doLogout() {
+  isAdmin = false;
+  pinBuffer = '';
+  updateDots();
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('lockOverlay').classList.remove('hidden');
+  document.getElementById('adminBar').classList.add('hidden');
+}
+</script>
+</body>
+</html>
