@@ -175,7 +175,7 @@ td.num{text-align:left;direction:ltr;}
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="النظام المالي">
-  <link rel="manifest" id="pwa-manifest">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
@@ -1475,74 +1475,27 @@ function printIncome(){
 }
 </script>
 
+
+
 <script>
-/* ══ PWA MANIFEST (inline) ══ */
-(function(){
-  const icons = [{
-    src: document.querySelector('img[alt="Free Lines"]')?.src || '',
-    sizes: '192x192', type: 'image/svg+xml'
-  }];
-  const manifest = {
-    name: 'النظام المالي والمحاسبي',
-    short_name: 'النظام المالي',
-    description: 'نظام إدارة العهد والمصروفات',
-    start_url: './',
-    display: 'standalone',
-    background_color: '#130D2A',
-    theme_color: '#130D2A',
-    dir: 'rtl',
-    lang: 'ar',
-    icons: [
-      { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" fill="%23130D2A" rx="32"/><text x="96" y="120" font-size="100" text-anchor="middle">💼</text></svg>', sizes: '192x192', type: 'image/svg+xml' },
-      { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="%23130D2A" rx="80"/><text x="256" y="320" font-size="280" text-anchor="middle">💼</text></svg>', sizes: '512x512', type: 'image/svg+xml' }
-    ]
-  };
-  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  document.getElementById('pwa-manifest').href = url;
-})();
-
-/* ══ SERVICE WORKER ══ */
-const SW_CODE = `
-self.addEventListener('install', e => self.skipWaiting());
-self.addEventListener('activate', e => clients.claim());
-self.addEventListener('message', e => {
-  if(e.data && e.data.type === 'NOTIFY'){
-    self.registration.showNotification(e.data.title, {
-      body: e.data.body,
-      icon: e.data.icon || '',
-      badge: e.data.icon || '',
-      dir: 'rtl',
-      lang: 'ar',
-      vibrate: [200, 100, 200],
-      tag: 'custody-notify',
-      renotify: true
-    });
-  }
-});
-`;
-
-let swReg = null;
+/* ══ SERVICE WORKER REGISTRATION ══ */
 if('serviceWorker' in navigator){
-  const blob = new Blob([SW_CODE], {type:'application/javascript'});
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl, {scope: './'})
-    .then(reg => { swReg = reg; })
+  navigator.serviceWorker.register('./sw.js')
+    .then(reg => { window.swReg = reg; })
     .catch(()=>{});
 }
 
 /* ══ PUSH NOTIFICATION ══ */
 function sendPushNotification(empName, amt, note){
   const title = '💼 عهدة جديدة';
-  const body = `👤 ${empName}  |  💰 ${Number(amt).toLocaleString('ar-SA',{minimumFractionDigits:2})} ر.س` + (note ? `\n📝 ${note}` : '');
-  if(swReg && Notification.permission === 'granted'){
-    swReg.active?.postMessage({ type:'NOTIFY', title, body });
+  const body = '👤 ' + empName + '  |  💰 ' + Number(amt).toLocaleString('ar-SA',{minimumFractionDigits:2}) + ' ر.س' + (note ? '\n📝 ' + note : '');
+  if(window.swReg && Notification.permission === 'granted'){
+    window.swReg.active?.postMessage({ type:'NOTIFY', title, body });
   } else if(Notification.permission === 'granted'){
     new Notification(title, { body, dir:'rtl' });
   }
 }
 
-/* ══ REQUEST NOTIFICATION PERMISSION ══ */
 function requestNotifPerm(cb){
   if(!('Notification' in window)){ if(cb) cb(false); return; }
   if(Notification.permission === 'granted'){ if(cb) cb(true); return; }
@@ -1568,7 +1521,7 @@ function showInstallBanner(){
       <div style="font-weight:700;font-size:.95rem;">ثبّت التطبيق على جوالك</div>
       <div style="font-size:.75rem;color:rgba(255,255,255,.7);">للوصول السريع وإشعارات العهد الفورية</div>
     </div>
-    <button id="install-btn" style="background:var(--gold);color:#130D2A;border:none;padding:9px 18px;border-radius:10px;font-weight:700;cursor:pointer;font-family:Changa,sans-serif;font-size:.85rem;">تثبيت</button>
+    <button id="install-btn" style="background:#C9A84C;color:#130D2A;border:none;padding:9px 18px;border-radius:10px;font-weight:700;cursor:pointer;font-family:Changa,sans-serif;font-size:.85rem;">تثبيت</button>
     <button onclick="document.getElementById('install-banner').remove();" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;">✕</button>
   `;
   document.body.appendChild(b);
@@ -1579,26 +1532,15 @@ function showInstallBanner(){
     deferredPrompt = null;
     b.remove();
     if(outcome === 'accepted'){
-      setTimeout(()=> requestNotifPerm(), 1000);
+      setTimeout(()=> requestNotifPerm(), 1500);
     }
   };
 }
 
-/* ══ ASK NOTIF PERMISSION AFTER LOGIN ══ */
-const _origInit = typeof initApp === 'function' ? initApp : null;
-document.addEventListener('DOMContentLoaded', ()=>{
-  // Patch login to request permission after success
-  const origLogin = window.doLogin;
-  if(origLogin){
-    window.doLogin = function(){
-      origLogin();
-      setTimeout(()=>{ requestNotifPerm(); }, 1500);
-    };
-  }
+window.addEventListener('appinstalled', () => {
+  setTimeout(()=> requestNotifPerm(), 1000);
 });
-
-/* ══ HOOK INTO addCustody NOTIFICATION ══ */
-const _origShowWaBtn = window.showWaBtn;
 </script>
+
 </body>
 </html>
