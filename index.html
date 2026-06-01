@@ -1,6 +1,144 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBouqrodsAlNYBvepGJtqgoPGjRRDGh3r4",
+      authDomain: "yawmia-freelines.firebaseapp.com",
+      projectId: "yawmia-freelines",
+      storageBucket: "yawmia-freelines.firebasestorage.app",
+      messagingSenderId: "986411981106",
+      appId: "1:986411981106:web:daf97c62d8d3f15d285f2b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    const DOC = 'main';
+    const COL = 'yawmiya';
+
+    // ── Save to Firestore ──
+    window.fbDump = async (key, value) => {
+      try {
+        await setDoc(doc(db, COL, key), { data: JSON.stringify(value) }, { merge: true });
+      } catch(e) { console.warn('fbDump error', e); }
+    };
+
+    // ── Load from Firestore ──
+    window.fbLoad = async (key) => {
+      try {
+        const snap = await getDoc(doc(db, COL, key));
+        if(snap.exists()) return JSON.parse(snap.data().data);
+      } catch(e) { console.warn('fbLoad error', e); }
+      return null;
+    };
+
+    // ── Real-time sync ──
+    window.fbListen = (key, callback) => {
+      onSnapshot(doc(db, COL, key), (snap) => {
+        if(snap.exists()) {
+          try { callback(JSON.parse(snap.data().data)); } catch(e){}
+        }
+      });
+    };
+
+    // ── Init: load all data from Firebase then start app ──
+    window.fbReady = false;
+    window.addEventListener('load', async () => {
+      try {
+        const keys = ['fl6_users','fl6_projects','fl6_sales','fl6_vatpay','fl6_custody'];
+        for(const k of keys){
+          const val = await window.fbLoad(k);
+          if(val !== null) localStorage.setItem(k, JSON.stringify(val));
+        }
+      } catch(e){ console.warn('Firebase init error', e); }
+      window.fbReady = true;
+      window.dispatchEvent(new Event('fbReady'));
+    });
+
+    // ── Listen for real-time changes ──
+    const syncKeys = {
+      'fl6_users'    : () => { users    = load('fl6_users');    renderUsers?.(); },
+      'fl6_custody'  : () => { custody  = load('fl6_custody');  renderCustody?.(); renderUsers?.(); renderEmpCustody?.(); },
+      'fl6_projects' : () => { projects = load('fl6_projects'); },
+      'fl6_sales'    : () => { sales    = load('fl6_sales'); },
+      'fl6_vatpay'   : () => { vatPays  = load('fl6_vatpay'); },
+    };
+    for(const [k, fn] of Object.entries(syncKeys)){
+      window.fbListen(k, (val) => {
+        localStorage.setItem(k, JSON.stringify(val));
+        try{ fn(); } catch(e){}
+      });
+    }
+
+    // ── FCM: Save employee token to Firestore ──
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+
+    window.fbSaveToken = async (empName) => {
+      try {
+        const messaging = getMessaging(app);
+        const token = await getToken(messaging, {
+          vapidKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeGA2AIpKWLwzawCkc_RrFqrjkjDuN5IwOByMI4wEI74'
+        });
+        if(token){
+          await setDoc(doc(db, 'fcm_tokens', empName), { token, updatedAt: new Date().toISOString() });
+          console.log('FCM token saved for', empName);
+        }
+      } catch(e){ console.warn('FCM token error:', e); }
+    };
+
+    // ── FCM: Listen for incoming notifications ──
+    window.addEventListener('fbReady', () => {
+      try {
+        const messaging = getMessaging(app);
+        onMessage(messaging, (payload) => {
+          if(payload.notification){
+            new Notification(payload.notification.title, {
+              body: payload.notification.body,
+              icon: './icon-192.png',
+              dir: 'rtl'
+            });
+          }
+        });
+      } catch(e){}
+    });
+
+    // ── FCM: Send notification via Firestore trigger ──
+    window.fbSendCustodyNotif = async (empName, amt, note) => {
+      try {
+        await setDoc(doc(db, 'notifications', uid()), {
+          empName,
+          amt,
+          note: note||'',
+          title: '💼 عهدة جديدة',
+          body: '👤 ' + empName + '  |  💰 ' + Number(amt).toLocaleString('ar-SA',{minimumFractionDigits:2}) + ' ر.س' + (note?'  📝 '+note:''),
+          createdAt: new Date().toISOString(),
+          sent: false
+        });
+      } catch(e){ console.warn('Notif send error:', e); }
+    };
+
+    // ── Listen for notifications targeted at current user ──
+    window.fbListenNotifs = (empName) => {
+      const { query, where, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      onSnapshot(
+        query(collection(db,'notifications'), where('empName','==',empName), where('sent','==',false)),
+        async (snap) => {
+          snap.forEach(async docSnap => {
+            const d = docSnap.data();
+            if(Notification.permission==='granted'){
+              new Notification(d.title||'💼 عهدة جديدة', { body: d.body, icon:'./icon-192.png', dir:'rtl', vibrate:[200,100,200] });
+            }
+            await setDoc(docSnap.ref, {sent:true}, {merge:true});
+          });
+        }
+      );
+    };
+  </script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Free Lines | النظام المالي</title>
@@ -179,6 +317,30 @@ td.num{text-align:left;direction:ltr;}
 </head>
 <body>
 
+<!-- ══ FIREBASE LOADING ══ -->
+<div id="fb-loading" style="position:fixed;inset:0;background:#130D2A;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:Changa,sans-serif;color:#fff;">
+  <div style="font-size:3rem;margin-bottom:16px;">💼</div>
+  <div style="color:#C9A84C;font-size:1.1rem;font-weight:700;">النظام المالي والمحاسبي</div>
+  <div style="color:rgba(255,255,255,.5);font-size:.85rem;margin-top:8px;">جاري تحميل البيانات...</div>
+  <div style="margin-top:20px;width:40px;height:40px;border:3px solid rgba(255,255,255,.1);border-top-color:#C9A84C;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+
+<script>
+// Wait for Firebase to load data, then hide loading screen
+function startApp(){
+  const loader = document.getElementById('fb-loading');
+  if(loader) loader.style.display='none';
+}
+if(window.fbReady){
+  startApp();
+} else {
+  window.addEventListener('fbReady', startApp);
+  // Fallback: if Firebase fails, start anyway after 5 seconds
+  setTimeout(startApp, 5000);
+}
+</script>
+
 <!-- ══ PORTAL ══ -->
 <div class="screen on" id="scr-portal">
   <div class="lb" style="width:460px;">
@@ -255,7 +417,10 @@ const esc  = s  => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 const tod  = () => new Date().toISOString().slice(0,10);
 const uid  = () => Date.now()+Math.random().toString(36).slice(2,6);
 const load = k  => JSON.parse(localStorage.getItem(k)||'[]');
-const dump = (k,v)=> localStorage.setItem(k,JSON.stringify(v));
+const dump = (k,v)=> {
+  localStorage.setItem(k,JSON.stringify(v));
+  if(window.fbDump) window.fbDump(k,v);
+};
 
 let users    = load(K.users);
 let projects = load(K.projects);
@@ -285,6 +450,15 @@ function totalCustodyGiven(empName){
 }
 // مجموع ما صرفه الموظف (مصروفات + VAT) عبر كل يومياته
 function totalEmpSpent(empName){
+  // Only custody-sourced expenses reduce the custody balance
+  return projects.filter(p=>p.owner===empName)
+    .reduce((s,p)=>s+p.expenses.reduce((x,e)=>{
+      if(!e.src || e.src==='custody') return x+n(e.amt)+n(e.vat);
+      return x;
+    },0),0);
+}
+function totalEmpSpentAll(empName){
+  // All expenses regardless of source (for reporting)
   return projects.filter(p=>p.owner===empName)
     .reduce((s,p)=>s+p.expenses.reduce((x,e)=>x+n(e.amt)+n(e.vat),0),0);
 }
@@ -322,7 +496,12 @@ function doLogin(){
   if(loginMode==='employee' && found.role==='admin'){ err.textContent='استخدم بوابة الإدارة للدخول كمدير'; return; }
   err.textContent='';
   me = found;
-  requestNotifPerm();
+  requestNotifPerm(granted => {
+    if(granted && found.role !== 'admin'){
+      if(window.fbSaveToken) window.fbSaveToken(found.name);
+      if(window.fbListenNotifs) window.fbListenNotifs(found.name);
+    }
+  });
   document.getElementById('scr-login').classList.remove('on');
   document.getElementById('app').style.display='block';
   document.getElementById('ah-user').innerHTML=
@@ -728,6 +907,7 @@ function addCustody(){
   document.getElementById('cus-note').value='';
   toast('✓ تم تسجيل العهدة');
   sendPushNotification(empName, amt, note);
+  if(window.fbSendCustodyNotif) window.fbSendCustodyNotif(empName, amt, note);
 }
 function delCustody(i){
   if(!confirm('حذف هذه العهدة؟')) return;
@@ -1262,23 +1442,30 @@ function openJournal(pi){
       </div>
       <button class="btn btn-g" style="margin-top:8px;width:100%;" onclick="addJExp(${pi})">+ إضافة مصروف</button>
     </div>
-    <div class="card" style="border-right:4px solid var(--teal);margin-top:14px;">
-      <div class="ct">📥 الإيرادات</div>
-      <div id="view-incs-${pi}">
-        ${(p.incomes||[]).length ? (p.incomes||[]).map((inc,ri)=>buildViewIncRow(pi,ri,inc)).join('') : '<p style=\"color:var(--txm);font-size:.85rem;padding:8px 0;\">لا توجد إيرادات مسجّلة</p>'}
-      </div>
-      <button class="btn" style="margin-top:8px;width:100%;" onclick="addJInc(${pi})">+ إضافة إيراد</button>
-    </div>`;
+  </div>`;
 }
+const EXP_SOURCES = [
+  {val:'custody',  label:'من حساب العهدة', icon:'💼'},
+  {val:'bank',     label:'تحويل بنكي',      icon:'🏦'},
+  {val:'exchange', label:'دفع بالصرف',      icon:'💳'},
+];
+
 function buildViewExpRow(pi,ri,e){
   const vDisp=fmt(e.vat)+' ر.س';
   const vCls=e.vat>0?'vat-val vat-on':'vat-val vat-off';
+  const srcOpts = EXP_SOURCES.map(s=>`<option value="${s.val}" ${(e.src||'custody')===s.val?'selected':''}>${s.icon} ${s.label}</option>`).join('');
   return `<div class="er" id="er-${pi}-${ri}">
     <div class="er-grid">
       <div><label class="lbl">البيان</label><input type="text" value="${esc(e.desc)}" onblur="setJExp(${pi},${ri},'desc',this.value)"></div>
       <div><label class="lbl">التاريخ</label><input type="date" value="${e.date||tod()}" onblur="setJExp(${pi},${ri},'date',this.value)"></div>
       <div><label class="lbl">المبلغ (ر.س)</label><input type="number" value="${e.amt||''}" step="0.01" onblur="setJExpAmt(${pi},${ri},this.value)"></div>
       <div><label class="lbl">VAT 15%</label><div class="${vCls}" id="ev-${pi}-${ri}">${vDisp}</div></div>
+    </div>
+    <div style="margin:6px 0;">
+      <label class="lbl">مصدر المبلغ</label>
+      <select style="width:100%;padding:7px;border-radius:var(--rs);background:var(--dk3);color:var(--tx);border:1px solid var(--dk4);font-family:Changa,sans-serif;" onchange="setJExp(${pi},${ri},'src',this.value)">
+        ${srcOpts}
+      </select>
     </div>
     <div class="er-bot">
       <label class="vat-chk">
@@ -1311,7 +1498,7 @@ function toggleJVat(pi,ri,on){
   if(el){ el.textContent=fmt(vat)+' ر.س'; el.className=vat>0?'vat-val vat-on':'vat-val vat-off'; }
 }
 function addJExp(pi){
-  const row={desc:'',amt:0,vat:0,date:tod(),hasVat:false};
+  const row={desc:'',amt:0,vat:0,date:tod(),hasVat:false,src:'custody'};
   projects[pi].expenses.push(row); dump(K.projects,projects);
   const ri=projects[pi].expenses.length-1;
   const c=document.getElementById('view-exps-'+pi);
